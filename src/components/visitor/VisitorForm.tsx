@@ -10,7 +10,8 @@ import {
   UserCheck, 
   FileText,
   CheckCircle2,
-  ArrowRight
+  ArrowRight,
+  QrCode
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,8 +24,9 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { VisitorFormData } from '@/types/visitor';
-import { cn } from '@/lib/utils';
+import { Visitor, VisitorFormData } from '@/types/visitor';
+import { VisitorQRCode } from './VisitorQRCode';
+import { format } from 'date-fns';
 
 const formSchema = z.object({
   fullName: z.string().min(2, 'Name must be at least 2 characters').max(100),
@@ -37,12 +39,12 @@ const formSchema = z.object({
 });
 
 interface VisitorFormProps {
-  onSubmit: (data: VisitorFormData) => void;
+  onSubmit: (data: VisitorFormData) => Visitor;
 }
 
 export function VisitorForm({ onSubmit }: VisitorFormProps) {
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [submittedName, setSubmittedName] = useState('');
+  const [createdVisitor, setCreatedVisitor] = useState<Visitor | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -67,36 +69,86 @@ export function VisitorForm({ onSubmit }: VisitorFormProps) {
       email: values.email || undefined,
       hostEmail: values.hostEmail || undefined,
     };
-    onSubmit(formData);
-    setSubmittedName(values.fullName);
+    const visitor = onSubmit(formData);
+    setCreatedVisitor(visitor);
     setIsSubmitted(true);
   };
 
   const handleNewCheckIn = () => {
     form.reset();
     setIsSubmitted(false);
-    setSubmittedName('');
+    setCreatedVisitor(null);
   };
 
-  if (isSubmitted) {
+  if (isSubmitted && createdVisitor) {
     return (
-      <div className="card-elevated p-8 md:p-12 text-center fade-in">
-        <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-success/10 flex items-center justify-center">
-          <CheckCircle2 className="w-10 h-10 text-success" />
+      <div className="card-elevated p-8 md:p-12 fade-in">
+        <div className="text-center mb-8">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-success/10 flex items-center justify-center">
+            <CheckCircle2 className="w-8 h-8 text-success" />
+          </div>
+          <h2 className="text-2xl font-semibold text-foreground mb-2">
+            Welcome, {createdVisitor.fullName}!
+          </h2>
+          <p className="text-muted-foreground max-w-md mx-auto">
+            You've been successfully checked in. Your host has been notified.
+          </p>
         </div>
-        <h2 className="text-2xl font-semibold text-foreground mb-2">
-          Welcome, {submittedName}!
-        </h2>
-        <p className="text-muted-foreground mb-8 max-w-md mx-auto">
-          You've been successfully checked in. Your host has been notified and will meet you shortly.
-        </p>
-        <Button 
-          onClick={handleNewCheckIn}
-          className="btn-primary"
-        >
-          New Check-in
-          <ArrowRight className="w-4 h-4 ml-2" />
-        </Button>
+
+        {/* QR Code Section */}
+        <div className="border-t border-border pt-8">
+          <div className="flex items-center justify-center gap-2 mb-6">
+            <QrCode className="w-5 h-5 text-primary" />
+            <h3 className="text-lg font-semibold text-foreground">Your Visitor Pass</h3>
+          </div>
+          
+          <div className="flex flex-col md:flex-row items-center gap-8 justify-center">
+            {/* QR Code */}
+            <VisitorQRCode visitor={createdVisitor} />
+
+            {/* Visit Details */}
+            <div className="bg-secondary/50 rounded-xl p-6 min-w-[250px]">
+              <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">
+                Visit Details
+              </h4>
+              <div className="space-y-4">
+                <div>
+                  <p className="text-xs text-muted-foreground">Visitor</p>
+                  <p className="font-medium text-foreground">{createdVisitor.fullName}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Company</p>
+                  <p className="font-medium text-foreground">{createdVisitor.companyName}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Visiting</p>
+                  <p className="font-medium text-foreground">{createdVisitor.hostName}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Check-in Time</p>
+                  <p className="font-medium text-foreground">
+                    {format(new Date(createdVisitor.checkInTime), 'h:mm a')}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Purpose</p>
+                  <p className="font-medium text-foreground text-sm">{createdVisitor.purpose}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* New Check-in Button */}
+        <div className="mt-8 pt-6 border-t border-border text-center">
+          <Button 
+            onClick={handleNewCheckIn}
+            className="btn-primary"
+          >
+            New Check-in
+            <ArrowRight className="w-4 h-4 ml-2" />
+          </Button>
+        </div>
       </div>
     );
   }
