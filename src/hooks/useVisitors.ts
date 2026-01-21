@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 export function useVisitors() {
   const [visitors, setVisitors] = useState<Visitor[]>(mockVisitors);
 
-  const addVisitor = useCallback((formData: VisitorFormData) => {
+  const addVisitor = useCallback((formData: VisitorFormData): Visitor => {
     const newVisitor: Visitor = {
       id: generateId(),
       fullName: formData.fullName,
