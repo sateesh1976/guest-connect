@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -11,7 +11,9 @@ import {
   FileText,
   CheckCircle2,
   ArrowRight,
-  QrCode
+  QrCode,
+  Camera,
+  X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,7 +47,26 @@ interface VisitorFormProps {
 export function VisitorForm({ onSubmit }: VisitorFormProps) {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [createdVisitor, setCreatedVisitor] = useState<Visitor | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPhotoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const clearPhoto = () => {
+    setPhotoPreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -78,6 +99,10 @@ export function VisitorForm({ onSubmit }: VisitorFormProps) {
     form.reset();
     setIsSubmitted(false);
     setCreatedVisitor(null);
+    setPhotoPreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   if (isSubmitted && createdVisitor) {
@@ -297,6 +322,59 @@ export function VisitorForm({ onSubmit }: VisitorFormProps) {
                 </FormItem>
               )}
             />
+          </div>
+
+          {/* Photo Upload */}
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 text-sm font-medium">
+              <Camera className="w-4 h-4 text-muted-foreground" />
+              Photo (Optional)
+            </label>
+            <div className="flex items-center gap-4">
+              {photoPreview ? (
+                <div className="relative">
+                  <img 
+                    src={photoPreview} 
+                    alt="Visitor preview" 
+                    className="w-20 h-20 rounded-xl object-cover border border-border"
+                  />
+                  <button
+                    type="button"
+                    onClick={clearPhoto}
+                    className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center shadow-md"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ) : (
+                <div 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-20 h-20 rounded-xl border-2 border-dashed border-border hover:border-primary/50 flex items-center justify-center cursor-pointer transition-colors bg-secondary/30"
+                >
+                  <Camera className="w-6 h-6 text-muted-foreground" />
+                </div>
+              )}
+              <div className="flex-1">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePhotoChange}
+                  className="hidden"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  {photoPreview ? 'Change Photo' : 'Upload Photo'}
+                </Button>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Take a photo or upload from device
+                </p>
+              </div>
+            </div>
           </div>
 
           <FormField

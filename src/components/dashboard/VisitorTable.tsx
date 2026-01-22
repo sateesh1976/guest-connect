@@ -6,7 +6,9 @@ import {
   LogOut, 
   Filter,
   ChevronDown,
-  MoreHorizontal
+  MoreHorizontal,
+  Users,
+  Eye
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,6 +29,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Visitor } from '@/types/visitor';
 import { cn } from '@/lib/utils';
+import { VisitorDetailsDialog } from './VisitorDetailsDialog';
 
 interface VisitorTableProps {
   visitors: Visitor[];
@@ -38,7 +41,13 @@ type FilterStatus = 'all' | 'checked-in' | 'checked-out';
 export function VisitorTable({ visitors, onCheckOut }: VisitorTableProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<FilterStatus>('all');
+  const [selectedVisitor, setSelectedVisitor] = useState<Visitor | null>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
+  const handleViewDetails = (visitor: Visitor) => {
+    setSelectedVisitor(visitor);
+    setDetailsOpen(true);
+  };
   const filteredVisitors = useMemo(() => {
     return visitors.filter((visitor) => {
       const matchesSearch = 
@@ -151,8 +160,20 @@ export function VisitorTable({ visitors, onCheckOut }: VisitorTableProps) {
           <TableBody>
             {filteredVisitors.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
-                  No visitors found
+                <TableCell colSpan={7} className="text-center py-16">
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+                      <Users className="w-6 h-6 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-foreground">No visitors found</p>
+                      <p className="text-sm text-muted-foreground">
+                        {searchQuery || statusFilter !== 'all' 
+                          ? 'Try adjusting your search or filter' 
+                          : 'Visitors will appear here once they check in'}
+                      </p>
+                    </div>
+                  </div>
                 </TableCell>
               </TableRow>
             ) : (
@@ -200,17 +221,18 @@ export function VisitorTable({ visitors, onCheckOut }: VisitorTableProps) {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {visitor.status === 'checked-in' ? (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => onCheckOut(visitor.id)}
-                        className="gap-2"
-                      >
-                        <LogOut className="w-3 h-3" />
-                        Check Out
-                      </Button>
-                    ) : (
+                    <div className="flex items-center gap-2">
+                      {visitor.status === 'checked-in' ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => onCheckOut(visitor.id)}
+                          className="gap-2"
+                        >
+                          <LogOut className="w-3 h-3" />
+                          Check Out
+                        </Button>
+                      ) : null}
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button size="sm" variant="ghost">
@@ -218,11 +240,13 @@ export function VisitorTable({ visitors, onCheckOut }: VisitorTableProps) {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem>View Details</DropdownMenuItem>
-                          <DropdownMenuItem>Print Badge</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleViewDetails(visitor)}>
+                            <Eye className="w-4 h-4 mr-2" />
+                            View Details
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
-                    )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))
@@ -235,6 +259,13 @@ export function VisitorTable({ visitors, onCheckOut }: VisitorTableProps) {
       <div className="p-4 border-t border-border flex items-center justify-between text-sm text-muted-foreground">
         <p>Showing {filteredVisitors.length} of {visitors.length} visitors</p>
       </div>
+
+      {/* Visitor Details Dialog */}
+      <VisitorDetailsDialog
+        visitor={selectedVisitor}
+        open={detailsOpen}
+        onOpenChange={setDetailsOpen}
+      />
     </div>
   );
 }
