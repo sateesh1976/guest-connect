@@ -1,8 +1,9 @@
 import { AppLayout } from '@/components/layout/AppLayout';
 import { StatsCard } from '@/components/dashboard/StatsCard';
 import { VisitorTable } from '@/components/dashboard/VisitorTable';
+import { ScannerDialog } from '@/components/scanner/ScannerDialog';
 import { useVisitors } from '@/hooks/useVisitors';
-import { Users, UserCheck, UserMinus, Clock } from 'lucide-react';
+import { Users, UserCheck, UserMinus, Clock, ScanLine } from 'lucide-react';
 
 const Dashboard = () => {
   const { visitors, checkOutVisitor, getCheckedInCount, getTodayVisitorCount } = useVisitors();
@@ -34,11 +35,25 @@ const Dashboard = () => {
     <AppLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="fade-in">
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-muted-foreground mt-1">
-            Monitor and manage all visitor activity
-          </p>
+        <div className="fade-in flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground">Dashboard</h1>
+            <p className="text-muted-foreground mt-1">
+              Monitor and manage all visitor activity
+            </p>
+          </div>
+          
+          {/* Scanner Button */}
+          <ScannerDialog 
+            visitors={visitors} 
+            onCheckOut={checkOutVisitor}
+            trigger={
+              <button className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors shadow-md">
+                <ScanLine className="w-5 h-5" />
+                <span>Scan QR Code</span>
+              </button>
+            }
+          />
         </div>
 
         {/* Stats Grid */}
