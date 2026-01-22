@@ -141,11 +141,18 @@ export function VisitorQRCode({ visitor }: VisitorQRCodeProps) {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     const img = new Image();
+    
+    // Set canvas size with padding for better quality
+    const size = 240;
+    canvas.width = size;
+    canvas.height = size;
 
     img.onload = () => {
-      canvas.width = img.width;
-      canvas.height = img.height;
-      ctx?.drawImage(img, 0, 0);
+      if (ctx) {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, size, size);
+        ctx.drawImage(img, 30, 30, 180, 180);
+      }
       const pngFile = canvas.toDataURL('image/png');
       const downloadLink = document.createElement('a');
       downloadLink.download = `visitor-pass-${visitor.id}.png`;
@@ -153,7 +160,7 @@ export function VisitorQRCode({ visitor }: VisitorQRCodeProps) {
       downloadLink.click();
     };
 
-    img.src = 'data:image/svg+xml;base64,' + btoa(svgData);
+    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
   };
 
   return (

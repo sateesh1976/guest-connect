@@ -125,8 +125,11 @@ export function VisitorForm({ onSubmit }: VisitorFormProps) {
                   <p className="font-medium text-foreground">{createdVisitor.hostName}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Check-in Time</p>
+                  <p className="text-xs text-muted-foreground">Check-in</p>
                   <p className="font-medium text-foreground">
+                    {format(new Date(createdVisitor.checkInTime), 'MMM d, yyyy')}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
                     {format(new Date(createdVisitor.checkInTime), 'h:mm a')}
                   </p>
                 </div>

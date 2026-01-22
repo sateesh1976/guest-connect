@@ -70,8 +70,8 @@ export function AppLayout({ children }: AppLayoutProps) {
       </header>
 
       {/* Mobile Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur-md">
-        <div className="flex items-center justify-around py-2">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur-md safe-area-pb">
+        <div className="flex items-center justify-around py-2 px-2">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
@@ -80,12 +80,14 @@ export function AppLayout({ children }: AppLayoutProps) {
                 key={item.path}
                 to={item.path}
                 className={cn(
-                  'flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-colors',
-                  isActive ? 'text-primary' : 'text-muted-foreground'
+                  'flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-colors min-w-0',
+                  isActive ? 'text-primary bg-primary/5' : 'text-muted-foreground'
                 )}
               >
-                <Icon className="w-5 h-5" />
-                <span className="text-xs font-medium">{item.label}</span>
+                <Icon className="w-5 h-5 flex-shrink-0" />
+                <span className="text-[10px] font-medium truncate max-w-[70px]">
+                  {item.label.split(' ')[0]}
+                </span>
               </Link>
             );
           })}
