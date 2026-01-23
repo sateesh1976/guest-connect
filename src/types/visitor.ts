@@ -8,8 +8,8 @@ export interface Visitor {
   hostName: string;
   hostEmail?: string;
   purpose: string;
-  checkInTime: Date;
-  checkOutTime?: Date;
+  checkInTime: string;
+  checkOutTime?: string;
   photoUrl?: string;
   status: 'checked-in' | 'checked-out';
 }

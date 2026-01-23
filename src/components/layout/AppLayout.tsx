@@ -1,27 +1,47 @@
 import { ReactNode } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   Users, 
   ClipboardList, 
   BarChart3, 
   Settings,
   Building2,
-  LogIn
+  LogIn,
+  LogOut,
+  Shield
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Badge } from '@/components/ui/badge';
 
 interface AppLayoutProps {
   children: ReactNode;
 }
 
-const navItems = [
-  { path: '/', label: 'Visitor Check-in', icon: LogIn },
-  { path: '/dashboard', label: 'Dashboard', icon: ClipboardList },
-  { path: '/reports', label: 'Reports', icon: BarChart3 },
-];
-
 export function AppLayout({ children }: AppLayoutProps) {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, userRole, isAdmin, signOut } = useAuth();
+
+  const navItems = [
+    { path: '/', label: 'Visitor Check-in', icon: LogIn, requireAuth: false },
+    { path: '/dashboard', label: 'Dashboard', icon: ClipboardList, requireAuth: true },
+    { path: '/reports', label: 'Reports', icon: BarChart3, requireAuth: true },
+    ...(isAdmin ? [{ path: '/settings', label: 'Settings', icon: Settings, requireAuth: true }] : []),
+  ];
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -40,6 +60,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
           <nav className="hidden md:flex items-center gap-1">
             {navItems.map((item) => {
+              if (item.requireAuth && !user) return null;
               const Icon = item.icon;
               const isActive = location.pathname === item.path;
               return (
@@ -59,12 +80,48 @@ export function AppLayout({ children }: AppLayoutProps) {
           </nav>
 
           <div className="flex items-center gap-3">
-            <button className="p-2 rounded-lg hover:bg-secondary transition-colors">
-              <Settings className="w-5 h-5 text-muted-foreground" />
-            </button>
-            <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
-              <Users className="w-4 h-4 text-primary" />
-            </div>
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Users className="w-4 h-4 text-primary" />
+                    </div>
+                    <div className="hidden md:block text-left">
+                      <p className="text-sm font-medium text-foreground truncate max-w-[120px]">
+                        {user.email?.split('@')[0]}
+                      </p>
+                      <Badge variant="secondary" className="text-[10px] h-4">
+                        {userRole === 'admin' && <Shield className="w-2.5 h-2.5 mr-1" />}
+                        {userRole || 'user'}
+                      </Badge>
+                    </div>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <div className="px-2 py-1.5">
+                    <p className="text-sm font-medium">{user.email}</p>
+                    <p className="text-xs text-muted-foreground capitalize">{userRole}</p>
+                  </div>
+                  <DropdownMenuSeparator />
+                  {isAdmin && (
+                    <DropdownMenuItem onClick={() => navigate('/settings')}>
+                      <Settings className="w-4 h-4 mr-2" />
+                      Settings
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button onClick={() => navigate('/auth')} variant="outline" size="sm">
+                <LogIn className="w-4 h-4 mr-2" />
+                Staff Login
+              </Button>
+            )}
           </div>
         </div>
       </header>
@@ -72,7 +129,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       {/* Mobile Navigation */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur-md safe-area-pb">
         <div className="flex items-center justify-around py-2 px-2">
-          {navItems.map((item) => {
+          {navItems.filter(item => !item.requireAuth || user).map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
             return (

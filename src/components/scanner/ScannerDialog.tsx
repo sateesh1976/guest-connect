@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, ReactNode } from 'react';
 import { format } from 'date-fns';
 import { 
   ScanLine, 
@@ -18,32 +18,33 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { QRScanner } from './QRScanner';
-import { Visitor } from '@/types/visitor';
 import { cn } from '@/lib/utils';
 
 interface ScanResult {
   success: boolean;
   message: string;
-  visitor?: Visitor;
+  badgeId?: string;
+  visitorName?: string;
+  companyName?: string;
+  checkInTime?: string;
 }
 
 interface ScannerDialogProps {
-  visitors: Visitor[];
-  onCheckOut: (id: string) => void;
-  trigger?: React.ReactNode;
+  onCheckOut: (badgeId: string) => Promise<boolean>;
+  children?: ReactNode;
 }
 
-export function ScannerDialog({ visitors, onCheckOut, trigger }: ScannerDialogProps) {
+export function ScannerDialog({ onCheckOut, children }: ScannerDialogProps) {
   const [open, setOpen] = useState(false);
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [recentScans, setRecentScans] = useState<ScanResult[]>([]);
 
-  const handleScan = (data: string) => {
+  const handleScan = async (data: string) => {
     try {
       const parsed = JSON.parse(data);
       
       // Validate QR data structure
-      if (!parsed.id || parsed.type !== 'visitor-pass') {
+      if (!parsed.badgeId || parsed.type !== 'visitor-pass') {
         setScanResult({
           success: false,
           message: 'Invalid QR code format',
@@ -51,33 +52,28 @@ export function ScannerDialog({ visitors, onCheckOut, trigger }: ScannerDialogPr
         return;
       }
 
-      // Find visitor
-      const visitor = visitors.find(v => v.id === parsed.id);
+      // Try to check out the visitor
+      const success = await onCheckOut(parsed.badgeId);
       
-      if (!visitor) {
+      if (!success) {
         setScanResult({
           success: false,
-          message: 'Visitor not found in system',
+          message: `Could not check out visitor ${parsed.name || parsed.badgeId}`,
+          badgeId: parsed.badgeId,
+          visitorName: parsed.name,
+          companyName: parsed.company,
+          checkInTime: parsed.checkIn,
         });
         return;
       }
-
-      if (visitor.status === 'checked-out') {
-        setScanResult({
-          success: false,
-          message: `${visitor.fullName} is already checked out`,
-          visitor,
-        });
-        return;
-      }
-
-      // Check out the visitor
-      onCheckOut(visitor.id);
       
       const result: ScanResult = {
         success: true,
-        message: `${visitor.fullName} checked out successfully`,
-        visitor,
+        message: `${parsed.name || 'Visitor'} checked out successfully`,
+        badgeId: parsed.badgeId,
+        visitorName: parsed.name,
+        companyName: parsed.company,
+        checkInTime: parsed.checkIn,
       };
       
       setScanResult(result);
@@ -103,7 +99,7 @@ export function ScannerDialog({ visitors, onCheckOut, trigger }: ScannerDialogPr
       }
     }}>
       <DialogTrigger asChild>
-        {trigger || (
+        {children || (
           <Button variant="outline" className="gap-2">
             <ScanLine className="w-4 h-4" />
             Scan QR
@@ -141,25 +137,33 @@ export function ScannerDialog({ visitors, onCheckOut, trigger }: ScannerDialogPr
                 )}>
                   {scanResult.message}
                 </p>
-                {scanResult.visitor && (
+                {(scanResult.visitorName || scanResult.badgeId) && (
                   <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
-                    <div className="flex items-center gap-1.5 text-muted-foreground">
-                      <User className="w-3.5 h-3.5" />
-                      <span className="truncate">{scanResult.visitor.fullName}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-muted-foreground">
-                      <Building className="w-3.5 h-3.5" />
-                      <span className="truncate">{scanResult.visitor.companyName}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-muted-foreground">
-                      <Clock className="w-3.5 h-3.5" />
-                      <span>
-                        Checked in {format(new Date(scanResult.visitor.checkInTime), 'h:mm a')}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-muted-foreground font-mono text-xs">
-                      {scanResult.visitor.badgeId}
-                    </div>
+                    {scanResult.visitorName && (
+                      <div className="flex items-center gap-1.5 text-muted-foreground">
+                        <User className="w-3.5 h-3.5" />
+                        <span className="truncate">{scanResult.visitorName}</span>
+                      </div>
+                    )}
+                    {scanResult.companyName && (
+                      <div className="flex items-center gap-1.5 text-muted-foreground">
+                        <Building className="w-3.5 h-3.5" />
+                        <span className="truncate">{scanResult.companyName}</span>
+                      </div>
+                    )}
+                    {scanResult.checkInTime && (
+                      <div className="flex items-center gap-1.5 text-muted-foreground">
+                        <Clock className="w-3.5 h-3.5" />
+                        <span>
+                          Checked in {format(new Date(scanResult.checkInTime), 'h:mm a')}
+                        </span>
+                      </div>
+                    )}
+                    {scanResult.badgeId && (
+                      <div className="flex items-center gap-1.5 text-muted-foreground font-mono text-xs">
+                        {scanResult.badgeId}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
