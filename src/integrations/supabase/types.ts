@@ -14,16 +14,160 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          email: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      visitors: {
+        Row: {
+          badge_id: string
+          check_in_time: string
+          check_out_time: string | null
+          company_name: string
+          created_at: string
+          created_by: string | null
+          email: string | null
+          full_name: string
+          host_email: string | null
+          host_name: string
+          id: string
+          phone_number: string
+          purpose: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          badge_id: string
+          check_in_time?: string
+          check_out_time?: string | null
+          company_name: string
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          full_name: string
+          host_email?: string | null
+          host_name: string
+          id?: string
+          phone_number: string
+          purpose: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          badge_id?: string
+          check_in_time?: string
+          check_out_time?: string | null
+          company_name?: string
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          full_name?: string
+          host_email?: string | null
+          host_name?: string
+          id?: string
+          phone_number?: string
+          purpose?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      webhook_settings: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          name: string
+          notify_on_checkin: boolean
+          notify_on_checkout: boolean
+          updated_at: string
+          webhook_type: string
+          webhook_url: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          notify_on_checkin?: boolean
+          notify_on_checkout?: boolean
+          updated_at?: string
+          webhook_type: string
+          webhook_url: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          notify_on_checkin?: boolean
+          notify_on_checkout?: boolean
+          updated_at?: string
+          webhook_type?: string
+          webhook_url?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_staff: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "receptionist" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +294,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "receptionist", "user"],
+    },
   },
 } as const

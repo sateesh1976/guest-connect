@@ -19,7 +19,7 @@ export const mockVisitors: Visitor[] = [
     hostName: 'Michael Chen',
     hostEmail: 'michael.chen@company.com',
     purpose: 'Product Demo Meeting',
-    checkInTime: new Date('2024-01-21T09:30:00'),
+    checkInTime: new Date('2024-01-21T09:30:00').toISOString(),
     status: 'checked-in',
   },
   {
@@ -32,7 +32,7 @@ export const mockVisitors: Visitor[] = [
     hostName: 'Emily Rodriguez',
     hostEmail: 'emily.r@company.com',
     purpose: 'Partnership Discussion',
-    checkInTime: new Date('2024-01-21T10:15:00'),
+    checkInTime: new Date('2024-01-21T10:15:00').toISOString(),
     status: 'checked-in',
   },
   {
@@ -43,8 +43,8 @@ export const mockVisitors: Visitor[] = [
     companyName: 'Creative Studios',
     hostName: 'James Wilson',
     purpose: 'Design Review',
-    checkInTime: new Date('2024-01-21T08:00:00'),
-    checkOutTime: new Date('2024-01-21T11:30:00'),
+    checkInTime: new Date('2024-01-21T08:00:00').toISOString(),
+    checkOutTime: new Date('2024-01-21T11:30:00').toISOString(),
     status: 'checked-out',
   },
   {
@@ -57,8 +57,8 @@ export const mockVisitors: Visitor[] = [
     hostName: 'Lisa Park',
     hostEmail: 'lisa.park@company.com',
     purpose: 'Technical Consultation',
-    checkInTime: new Date('2024-01-20T14:00:00'),
-    checkOutTime: new Date('2024-01-20T16:45:00'),
+    checkInTime: new Date('2024-01-20T14:00:00').toISOString(),
+    checkOutTime: new Date('2024-01-20T16:45:00').toISOString(),
     status: 'checked-out',
   },
   {
@@ -70,7 +70,7 @@ export const mockVisitors: Visitor[] = [
     companyName: 'Startup Co',
     hostName: 'Alex Thompson',
     purpose: 'Investor Meeting',
-    checkInTime: new Date('2024-01-21T11:00:00'),
+    checkInTime: new Date('2024-01-21T11:00:00').toISOString(),
     status: 'checked-in',
   },
 ];

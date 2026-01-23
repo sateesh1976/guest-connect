@@ -26,9 +26,19 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Visitor, VisitorFormData } from '@/types/visitor';
+import { Visitor } from '@/types/visitor';
 import { VisitorQRCode } from './VisitorQRCode';
 import { format } from 'date-fns';
+
+interface VisitorFormData {
+  fullName: string;
+  phoneNumber: string;
+  email?: string;
+  companyName: string;
+  hostName: string;
+  hostEmail?: string;
+  purpose: string;
+}
 
 const formSchema = z.object({
   fullName: z.string().min(2, 'Name must be at least 2 characters').max(100),
@@ -41,7 +51,7 @@ const formSchema = z.object({
 });
 
 interface VisitorFormProps {
-  onSubmit: (data: VisitorFormData) => Visitor;
+  onSubmit: (data: VisitorFormData) => Visitor | Promise<Visitor>;
 }
 
 export function VisitorForm({ onSubmit }: VisitorFormProps) {
@@ -80,7 +90,7 @@ export function VisitorForm({ onSubmit }: VisitorFormProps) {
     },
   });
 
-  const handleSubmit = (values: z.infer<typeof formSchema>) => {
+  const handleSubmit = async (values: z.infer<typeof formSchema>) => {
     const formData: VisitorFormData = {
       fullName: values.fullName,
       phoneNumber: values.phoneNumber,
@@ -90,7 +100,7 @@ export function VisitorForm({ onSubmit }: VisitorFormProps) {
       email: values.email || undefined,
       hostEmail: values.hostEmail || undefined,
     };
-    const visitor = onSubmit(formData);
+    const visitor = await onSubmit(formData);
     setCreatedVisitor(visitor);
     setIsSubmitted(true);
   };

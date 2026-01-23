@@ -17,7 +17,7 @@ export function useVisitors() {
       hostName: formData.hostName,
       hostEmail: formData.hostEmail,
       purpose: formData.purpose,
-      checkInTime: new Date(),
+      checkInTime: new Date().toISOString(),
       status: 'checked-in',
     };
 
@@ -33,7 +33,7 @@ export function useVisitors() {
     setVisitors(prev =>
       prev.map(visitor =>
         visitor.id === id
-          ? { ...visitor, status: 'checked-out' as const, checkOutTime: new Date() }
+          ? { ...visitor, status: 'checked-out' as const, checkOutTime: new Date().toISOString() }
           : visitor
       )
     );

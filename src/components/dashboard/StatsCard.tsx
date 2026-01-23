@@ -1,11 +1,13 @@
-import { ReactNode } from 'react';
+import { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface StatsCardProps {
   title: string;
   value: string | number;
   subtitle?: string;
-  icon: ReactNode;
+  icon: LucideIcon;
+  iconColor?: string;
+  iconBgColor?: string;
   trend?: {
     value: number;
     isPositive: boolean;
@@ -17,7 +19,9 @@ export function StatsCard({
   title, 
   value, 
   subtitle, 
-  icon, 
+  icon: Icon, 
+  iconColor = 'text-primary',
+  iconBgColor = 'bg-primary/10',
   trend,
   className 
 }: StatsCardProps) {
@@ -39,8 +43,8 @@ export function StatsCard({
             </p>
           )}
         </div>
-        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-          {icon}
+        <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center", iconBgColor)}>
+          <Icon className={cn("w-6 h-6", iconColor)} />
         </div>
       </div>
     </div>
