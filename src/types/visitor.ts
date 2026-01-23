@@ -1,5 +1,6 @@
 export interface Visitor {
   id: string;
+  badgeId: string;
   fullName: string;
   phoneNumber: string;
   email?: string;

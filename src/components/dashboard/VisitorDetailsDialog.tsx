@@ -52,22 +52,27 @@ export function VisitorDetailsDialog({ visitor, open, onOpenChange }: VisitorDet
                   className="w-12 h-12 rounded-full object-cover"
                 />
               ) : (
-                <User className="w-6 h-6 text-primary" />
-              )}
+              <User className="w-6 h-6 text-primary" />
+            )}
             </div>
             <div>
               <p className="text-lg font-semibold">{visitor.fullName}</p>
-              <Badge 
-                variant="outline"
-                className={cn(
-                  "font-medium text-xs mt-1",
-                  visitor.status === 'checked-in' 
-                    ? 'status-checked-in' 
-                    : 'status-checked-out'
-                )}
-              >
-                {visitor.status === 'checked-in' ? 'Checked In' : 'Checked Out'}
-              </Badge>
+              <div className="flex items-center gap-2 mt-1">
+                <Badge 
+                  variant="outline"
+                  className={cn(
+                    "font-medium text-xs",
+                    visitor.status === 'checked-in' 
+                      ? 'status-checked-in' 
+                      : 'status-checked-out'
+                  )}
+                >
+                  {visitor.status === 'checked-in' ? 'Checked In' : 'Checked Out'}
+                </Badge>
+                <span className="text-xs font-mono text-muted-foreground">
+                  {visitor.badgeId}
+                </span>
+              </div>
             </div>
           </DialogTitle>
         </DialogHeader>
