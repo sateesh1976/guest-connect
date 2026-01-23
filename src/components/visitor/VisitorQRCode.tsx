@@ -15,6 +15,7 @@ export function VisitorQRCode({ visitor }: VisitorQRCodeProps) {
   // Create a unique visitor pass data
   const qrData = JSON.stringify({
     id: visitor.id,
+    badgeId: visitor.badgeId,
     name: visitor.fullName,
     company: visitor.companyName,
     host: visitor.hostName,
@@ -120,9 +121,9 @@ export function VisitorQRCode({ visitor }: VisitorQRCodeProps) {
               </div>
             </div>
             <div class="footer">
-              Please wear this badge visibly at all times.<br/>
-              Pass ID: ${visitor.id.toUpperCase()}
-            </div>
+123:               Please wear this badge visibly at all times.<br/>
+124:               Badge ID: ${visitor.badgeId}
+125:             </div>
           </div>
         </body>
       </html>
@@ -155,7 +156,7 @@ export function VisitorQRCode({ visitor }: VisitorQRCodeProps) {
       }
       const pngFile = canvas.toDataURL('image/png');
       const downloadLink = document.createElement('a');
-      downloadLink.download = `visitor-pass-${visitor.id}.png`;
+      downloadLink.download = `visitor-pass-${visitor.badgeId}.png`;
       downloadLink.href = pngFile;
       downloadLink.click();
     };
@@ -183,10 +184,10 @@ export function VisitorQRCode({ visitor }: VisitorQRCodeProps) {
       {/* Visitor Info */}
       <div className="mt-6 text-center">
         <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
-          Pass ID
+          Badge ID
         </p>
         <p className="text-sm font-mono font-medium text-foreground">
-          {visitor.id.toUpperCase()}
+          {visitor.badgeId}
         </p>
       </div>
 

@@ -151,11 +151,14 @@ export function ScannerDialog({ visitors, onCheckOut, trigger }: ScannerDialogPr
                       <Building className="w-3.5 h-3.5" />
                       <span className="truncate">{scanResult.visitor.companyName}</span>
                     </div>
-                    <div className="flex items-center gap-1.5 text-muted-foreground col-span-2">
+                    <div className="flex items-center gap-1.5 text-muted-foreground">
                       <Clock className="w-3.5 h-3.5" />
                       <span>
                         Checked in {format(new Date(scanResult.visitor.checkInTime), 'h:mm a')}
                       </span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-muted-foreground font-mono text-xs">
+                      {scanResult.visitor.badgeId}
                     </div>
                   </div>
                 )}

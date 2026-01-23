@@ -1,8 +1,17 @@
 import { Visitor } from '@/types/visitor';
 
+export const generateId = () => Math.random().toString(36).substring(2, 11);
+
+export const generateBadgeId = () => {
+  const year = new Date().getFullYear();
+  const random = Math.floor(1000 + Math.random() * 9000);
+  return `V-${year}-${random}`;
+};
+
 export const mockVisitors: Visitor[] = [
   {
     id: '1',
+    badgeId: 'V-2024-1001',
     fullName: 'Sarah Johnson',
     phoneNumber: '+1 555-0123',
     email: 'sarah.j@techcorp.com',
@@ -15,6 +24,7 @@ export const mockVisitors: Visitor[] = [
   },
   {
     id: '2',
+    badgeId: 'V-2024-1002',
     fullName: 'David Miller',
     phoneNumber: '+1 555-0456',
     email: 'dmiller@innovate.io',
@@ -27,6 +37,7 @@ export const mockVisitors: Visitor[] = [
   },
   {
     id: '3',
+    badgeId: 'V-2024-1003',
     fullName: 'Amanda Lee',
     phoneNumber: '+1 555-0789',
     companyName: 'Creative Studios',
@@ -38,6 +49,7 @@ export const mockVisitors: Visitor[] = [
   },
   {
     id: '4',
+    badgeId: 'V-2024-1004',
     fullName: 'Robert Chen',
     phoneNumber: '+1 555-0321',
     email: 'rchen@globaltech.com',
@@ -51,6 +63,7 @@ export const mockVisitors: Visitor[] = [
   },
   {
     id: '5',
+    badgeId: 'V-2024-1005',
     fullName: 'Jennifer White',
     phoneNumber: '+1 555-0654',
     email: 'jwhite@startup.co',
@@ -61,5 +74,3 @@ export const mockVisitors: Visitor[] = [
     status: 'checked-in',
   },
 ];
-
-export const generateId = () => Math.random().toString(36).substring(2, 11);

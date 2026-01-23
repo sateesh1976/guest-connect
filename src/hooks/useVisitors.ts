@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { Visitor, VisitorFormData } from '@/types/visitor';
-import { mockVisitors, generateId } from '@/lib/mockData';
+import { mockVisitors, generateId, generateBadgeId } from '@/lib/mockData';
 import { toast } from 'sonner';
 
 export function useVisitors() {
@@ -9,6 +9,7 @@ export function useVisitors() {
   const addVisitor = useCallback((formData: VisitorFormData): Visitor => {
     const newVisitor: Visitor = {
       id: generateId(),
+      badgeId: generateBadgeId(),
       fullName: formData.fullName,
       phoneNumber: formData.phoneNumber,
       email: formData.email,
