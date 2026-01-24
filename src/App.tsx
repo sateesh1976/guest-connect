@@ -10,6 +10,8 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
+import UserManagement from "./pages/UserManagement";
+import PreRegistration from "./pages/PreRegistration";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -45,6 +47,22 @@ const App = () => (
               element={
                 <ProtectedRoute requireAdmin>
                   <Settings />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/users" 
+              element={
+                <ProtectedRoute requireAdmin>
+                  <UserManagement />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/pre-registration" 
+              element={
+                <ProtectedRoute requireStaff>
+                  <PreRegistration />
                 </ProtectedRoute>
               } 
             />

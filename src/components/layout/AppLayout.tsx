@@ -8,7 +8,9 @@ import {
   Building2,
   LogIn,
   LogOut,
-  Shield
+  Shield,
+  UserCog,
+  CalendarPlus
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -34,8 +36,12 @@ export function AppLayout({ children }: AppLayoutProps) {
   const navItems = [
     { path: '/', label: 'Visitor Check-in', icon: LogIn, requireAuth: false },
     { path: '/dashboard', label: 'Dashboard', icon: ClipboardList, requireAuth: true },
+    { path: '/pre-registration', label: 'Pre-Register', icon: CalendarPlus, requireAuth: true },
     { path: '/reports', label: 'Reports', icon: BarChart3, requireAuth: true },
-    ...(isAdmin ? [{ path: '/settings', label: 'Settings', icon: Settings, requireAuth: true }] : []),
+    ...(isAdmin ? [
+      { path: '/users', label: 'Users', icon: UserCog, requireAuth: true },
+      { path: '/settings', label: 'Settings', icon: Settings, requireAuth: true },
+    ] : []),
   ];
 
   const handleSignOut = async () => {
