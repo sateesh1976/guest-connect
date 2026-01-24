@@ -113,6 +113,15 @@ export function useVisitorsDB() {
       console.error('Webhook notification failed:', webhookError);
     }
 
+    // Trigger email notification
+    try {
+      await supabase.functions.invoke('send-visitor-email', {
+        body: { visitor: newVisitor, eventType: 'checkin' }
+      });
+    } catch (emailError) {
+      console.error('Email notification failed:', emailError);
+    }
+
     toast({
       title: 'Success',
       description: `${formData.fullName} has been checked in`,

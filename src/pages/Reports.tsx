@@ -1,4 +1,5 @@
-import { format, subDays, startOfDay, endOfDay } from 'date-fns';
+import { useState, useMemo } from 'react';
+import { format, subDays, startOfDay, endOfDay, isWithinInterval } from 'date-fns';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend
@@ -7,61 +8,94 @@ import { Users, Building2, TrendingUp, Clock } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { useVisitorsDB } from '@/hooks/useVisitorsDB';
 import { StatsCard } from '@/components/dashboard/StatsCard';
+import { DateRangeFilter, DateRange } from '@/components/reports/DateRangeFilter';
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--success))', 'hsl(var(--warning))', 'hsl(var(--destructive))', 'hsl(var(--secondary))'];
 
 const Reports = () => {
   const { visitors, isLoading } = useVisitorsDB();
-
-  // Weekly data
-  const weeklyData = Array.from({ length: 7 }, (_, i) => {
-    const date = subDays(new Date(), 6 - i);
-    const dayStart = startOfDay(date);
-    const dayEnd = endOfDay(date);
-    const count = visitors.filter(v => {
-      const checkIn = new Date(v.check_in_time);
-      return checkIn >= dayStart && checkIn <= dayEnd;
-    }).length;
-    return {
-      name: format(date, 'EEE'),
-      visitors: count,
-    };
+  
+  // Default to last 7 days
+  const [dateRange, setDateRange] = useState<DateRange>({
+    from: subDays(new Date(), 6),
+    to: new Date(),
   });
+
+  // Filter visitors by date range
+  const filteredVisitors = useMemo(() => {
+    return visitors.filter(v => {
+      const checkIn = new Date(v.check_in_time);
+      return isWithinInterval(checkIn, {
+        start: startOfDay(dateRange.from),
+        end: endOfDay(dateRange.to),
+      });
+    });
+  }, [visitors, dateRange]);
+
+  // Calculate number of days in range for daily data
+  const daysInRange = useMemo(() => {
+    const diffTime = Math.abs(dateRange.to.getTime() - dateRange.from.getTime());
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+  }, [dateRange]);
+
+  // Daily data for the selected range
+  const dailyData = useMemo(() => {
+    return Array.from({ length: Math.min(daysInRange, 31) }, (_, i) => {
+      const date = subDays(dateRange.to, Math.min(daysInRange, 31) - 1 - i);
+      const dayStart = startOfDay(date);
+      const dayEnd = endOfDay(date);
+      const count = visitors.filter(v => {
+        const checkIn = new Date(v.check_in_time);
+        return checkIn >= dayStart && checkIn <= dayEnd;
+      }).length;
+      return {
+        name: format(date, daysInRange > 14 ? 'MMM d' : 'EEE'),
+        visitors: count,
+      };
+    });
+  }, [visitors, dateRange, daysInRange]);
 
   // Company distribution
-  const companyCount: Record<string, number> = {};
-  visitors.forEach(v => {
-    companyCount[v.company_name] = (companyCount[v.company_name] || 0) + 1;
-  });
-  const companyData = Object.entries(companyCount)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5)
-    .map(([name, value]) => ({ name, value }));
+  const companyData = useMemo(() => {
+    const companyCount: Record<string, number> = {};
+    filteredVisitors.forEach(v => {
+      companyCount[v.company_name] = (companyCount[v.company_name] || 0) + 1;
+    });
+    return Object.entries(companyCount)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([name, value]) => ({ name, value }));
+  }, [filteredVisitors]);
 
   // Purpose distribution
-  const purposeKeywords = ['Meeting', 'Interview', 'Delivery', 'Maintenance', 'Other'];
-  const purposeData = purposeKeywords.map(keyword => ({
-    name: keyword,
-    value: visitors.filter(v => 
-      v.purpose.toLowerCase().includes(keyword.toLowerCase()) ||
-      (keyword === 'Other' && !purposeKeywords.slice(0, -1).some(k => 
-        v.purpose.toLowerCase().includes(k.toLowerCase())
-      ))
-    ).length,
-  })).filter(d => d.value > 0);
+  const purposeData = useMemo(() => {
+    const purposeKeywords = ['Meeting', 'Interview', 'Delivery', 'Maintenance', 'Other'];
+    return purposeKeywords.map(keyword => ({
+      name: keyword,
+      value: filteredVisitors.filter(v => 
+        v.purpose.toLowerCase().includes(keyword.toLowerCase()) ||
+        (keyword === 'Other' && !purposeKeywords.slice(0, -1).some(k => 
+          v.purpose.toLowerCase().includes(k.toLowerCase())
+        ))
+      ).length,
+    })).filter(d => d.value > 0);
+  }, [filteredVisitors]);
 
   // Top hosts
-  const hostCount: Record<string, number> = {};
-  visitors.forEach(v => {
-    hostCount[v.host_name] = (hostCount[v.host_name] || 0) + 1;
-  });
-  const topHosts = Object.entries(hostCount)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5);
+  const topHosts = useMemo(() => {
+    const hostCount: Record<string, number> = {};
+    filteredVisitors.forEach(v => {
+      hostCount[v.host_name] = (hostCount[v.host_name] || 0) + 1;
+    });
+    return Object.entries(hostCount)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5);
+  }, [filteredVisitors]);
 
   // Stats
-  const totalVisitors = visitors.length;
-  const uniqueCompanies = new Set(visitors.map(v => v.company_name)).size;
+  const totalVisitors = filteredVisitors.length;
+  const uniqueCompanies = new Set(filteredVisitors.map(v => v.company_name)).size;
+  const dailyAverage = Math.round(totalVisitors / Math.max(daysInRange, 1));
 
   if (isLoading) {
     return (
@@ -75,9 +109,12 @@ const Reports = () => {
 
   return (
     <AppLayout>
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-foreground mb-1">Reports</h1>
-        <p className="text-muted-foreground">Analytics and insights on visitor activity</p>
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-8">
+        <div>
+          <h1 className="text-2xl font-semibold text-foreground mb-1">Reports</h1>
+          <p className="text-muted-foreground">Analytics and insights on visitor activity</p>
+        </div>
+        <DateRangeFilter dateRange={dateRange} onDateRangeChange={setDateRange} />
       </div>
 
       {/* Stats Cards */}
@@ -97,15 +134,15 @@ const Reports = () => {
           iconBgColor="bg-success/10"
         />
         <StatsCard
-          title="This Week"
-          value={weeklyData.reduce((sum, d) => sum + d.visitors, 0)}
+          title="Period Total"
+          value={totalVisitors}
           icon={TrendingUp}
           iconColor="text-warning"
           iconBgColor="bg-warning/10"
         />
         <StatsCard
           title="Daily Average"
-          value={Math.round(weeklyData.reduce((sum, d) => sum + d.visitors, 0) / 7)}
+          value={dailyAverage}
           icon={Clock}
           iconColor="text-secondary-foreground"
           iconBgColor="bg-secondary"
@@ -114,12 +151,12 @@ const Reports = () => {
 
       {/* Charts */}
       <div className="grid lg:grid-cols-2 gap-6 mb-8">
-        {/* Weekly Trend */}
+        {/* Daily Trend */}
         <div className="card-elevated p-6">
-          <h3 className="text-lg font-semibold text-foreground mb-4">Weekly Visitor Trend</h3>
+          <h3 className="text-lg font-semibold text-foreground mb-4">Visitor Trend</h3>
           <div className="h-[280px]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={weeklyData}>
+              <BarChart data={dailyData}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                 <XAxis dataKey="name" className="text-xs fill-muted-foreground" />
                 <YAxis className="text-xs fill-muted-foreground" />
