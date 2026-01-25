@@ -1,5 +1,6 @@
 import { useState, ReactNode } from 'react';
 import { format } from 'date-fns';
+import { z } from 'zod';
 import { 
   ScanLine, 
   CheckCircle2, 
@@ -19,6 +20,18 @@ import {
 import { Button } from '@/components/ui/button';
 import { QRScanner } from './QRScanner';
 import { cn } from '@/lib/utils';
+
+// Schema for validating QR code data
+const qrCodeSchema = z.object({
+  type: z.literal('visitor-pass'),
+  badgeId: z.string().min(1).max(50),
+  name: z.string().max(200).optional(),
+  company: z.string().max(200).optional(),
+  host: z.string().max(200).optional(),
+  checkIn: z.string().optional(),
+});
+
+type QRCodeData = z.infer<typeof qrCodeSchema>;
 
 interface ScanResult {
   success: boolean;
@@ -41,10 +54,22 @@ export function ScannerDialog({ onCheckOut, children }: ScannerDialogProps) {
 
   const handleScan = async (data: string) => {
     try {
-      const parsed = JSON.parse(data);
+      // Parse JSON with error handling
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(data);
+      } catch {
+        setScanResult({
+          success: false,
+          message: 'Invalid QR code - not valid JSON',
+        });
+        return;
+      }
+
+      // Validate QR code structure using zod
+      const validationResult = qrCodeSchema.safeParse(parsed);
       
-      // Validate QR data structure
-      if (!parsed.badgeId || parsed.type !== 'visitor-pass') {
+      if (!validationResult.success) {
         setScanResult({
           success: false,
           message: 'Invalid QR code format',
@@ -52,28 +77,30 @@ export function ScannerDialog({ onCheckOut, children }: ScannerDialogProps) {
         return;
       }
 
+      const validatedData: QRCodeData = validationResult.data;
+
       // Try to check out the visitor
-      const success = await onCheckOut(parsed.badgeId);
+      const success = await onCheckOut(validatedData.badgeId);
       
       if (!success) {
         setScanResult({
           success: false,
-          message: `Could not check out visitor ${parsed.name || parsed.badgeId}`,
-          badgeId: parsed.badgeId,
-          visitorName: parsed.name,
-          companyName: parsed.company,
-          checkInTime: parsed.checkIn,
+          message: `Could not check out visitor ${validatedData.name || validatedData.badgeId}`,
+          badgeId: validatedData.badgeId,
+          visitorName: validatedData.name,
+          companyName: validatedData.company,
+          checkInTime: validatedData.checkIn,
         });
         return;
       }
       
       const result: ScanResult = {
         success: true,
-        message: `${parsed.name || 'Visitor'} checked out successfully`,
-        badgeId: parsed.badgeId,
-        visitorName: parsed.name,
-        companyName: parsed.company,
-        checkInTime: parsed.checkIn,
+        message: `${validatedData.name || 'Visitor'} checked out successfully`,
+        badgeId: validatedData.badgeId,
+        visitorName: validatedData.name,
+        companyName: validatedData.company,
+        checkInTime: validatedData.checkIn,
       };
       
       setScanResult(result);
