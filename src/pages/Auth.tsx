@@ -3,7 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Building2, Mail, Lock, User, ArrowRight, AlertCircle } from 'lucide-react';
+import { Building2, Mail, Lock, User, ArrowRight, AlertCircle, ArrowLeft } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -37,6 +39,7 @@ type SignupFormData = z.infer<typeof signupSchema>;
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user, signIn, signUp } = useAuth();
@@ -88,8 +91,35 @@ export default function Auth() {
     }
   };
 
+  const handleForgotPassword = async (email: string) => {
+    if (!email) {
+      setError('Please enter your email address');
+      return;
+    }
+    
+    setError(null);
+    setIsSubmitting(true);
+    
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth?reset=true`,
+    });
+    
+    setIsSubmitting(false);
+    
+    if (error) {
+      setError(error.message);
+    } else {
+      toast({
+        title: "Check your email",
+        description: "We've sent you a password reset link.",
+      });
+      setIsForgotPassword(false);
+    }
+  };
+
   const switchMode = () => {
     setIsLogin(!isLogin);
+    setIsForgotPassword(false);
     setError(null);
     loginForm.reset();
     signupForm.reset();
@@ -105,7 +135,11 @@ export default function Auth() {
           </div>
           <h1 className="text-2xl font-semibold text-foreground">VisitorHub</h1>
           <p className="text-muted-foreground mt-2">
-            {isLogin ? 'Sign in to manage visitors' : 'Create your staff account'}
+            {isForgotPassword 
+              ? 'Reset your password' 
+              : isLogin 
+                ? 'Sign in to manage visitors' 
+                : 'Create your staff account'}
           </p>
         </div>
 
@@ -118,7 +152,45 @@ export default function Auth() {
             </Alert>
           )}
 
-          {isLogin ? (
+          {isForgotPassword ? (
+            <div className="space-y-4">
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium mb-2">
+                  <Mail className="w-4 h-4 text-muted-foreground" />
+                  Email
+                </label>
+                <Input 
+                  type="email"
+                  placeholder="admin@company.com" 
+                  className="input-focus"
+                  value={loginForm.watch('email')}
+                  onChange={(e) => loginForm.setValue('email', e.target.value)}
+                />
+              </div>
+
+              <Button 
+                type="button"
+                className="w-full btn-primary h-12"
+                disabled={isSubmitting}
+                onClick={() => handleForgotPassword(loginForm.watch('email'))}
+              >
+                {isSubmitting ? 'Sending...' : 'Send Reset Link'}
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIsForgotPassword(false);
+                  setError(null);
+                }}
+                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground w-full justify-center"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Back to sign in
+              </button>
+            </div>
+          ) : isLogin ? (
             <Form {...loginForm}>
               <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
                 <FormField
@@ -164,6 +236,19 @@ export default function Auth() {
                     </FormItem>
                   )}
                 />
+
+                <div className="text-right">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsForgotPassword(true);
+                      setError(null);
+                    }}
+                    className="text-sm text-primary hover:underline"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
 
                 <Button 
                   type="submit" 
@@ -278,18 +363,20 @@ export default function Auth() {
           )}
 
           {/* Toggle */}
-          <div className="mt-6 text-center">
-            <p className="text-sm text-muted-foreground">
-              {isLogin ? "Don't have an account?" : "Already have an account?"}
-              <button
-                type="button"
-                onClick={switchMode}
-                className="ml-2 text-primary hover:underline font-medium"
-              >
-                {isLogin ? 'Sign up' : 'Sign in'}
-              </button>
-            </p>
-          </div>
+          {!isForgotPassword && (
+            <div className="mt-6 text-center">
+              <p className="text-sm text-muted-foreground">
+                {isLogin ? "Don't have an account?" : "Already have an account?"}
+                <button
+                  type="button"
+                  onClick={switchMode}
+                  className="ml-2 text-primary hover:underline font-medium"
+                >
+                  {isLogin ? 'Sign up' : 'Sign in'}
+                </button>
+              </p>
+            </div>
+          )}
 
           {/* Info for first user */}
           {!isLogin && (
