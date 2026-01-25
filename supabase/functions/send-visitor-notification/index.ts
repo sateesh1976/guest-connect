@@ -31,6 +31,15 @@ interface WebhookSetting {
   notify_on_checkout: boolean;
 }
 
+// Text escape function to prevent injection in webhook messages
+function escapeText(unsafe: string | null | undefined): string {
+  if (!unsafe) return '';
+  // Remove control characters and limit length
+  return unsafe
+    .replace(/[\x00-\x1F\x7F]/g, '')
+    .substring(0, 500);
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -39,20 +48,83 @@ serve(async (req) => {
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
-    if (!supabaseUrl || !supabaseServiceKey) {
+    if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey) {
       throw new Error('Missing Supabase configuration');
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    // Authenticate the request
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      console.error("Missing or invalid Authorization header");
+      return new Response(
+        JSON.stringify({ success: false, error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Create client with user's auth token
+    const supabaseUser = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+
+    // Validate user and get claims
+    const token = authHeader.replace('Bearer ', '');
+    const { data: claimsData, error: claimsError } = await supabaseUser.auth.getClaims(token);
+    
+    if (claimsError || !claimsData?.claims) {
+      console.error("JWT validation failed:", claimsError);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const userId = claimsData.claims.sub;
+
+    // Verify user has staff role
+    const { data: roleData, error: roleError } = await supabaseUser
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (roleError || !roleData || !['admin', 'receptionist'].includes(roleData.role)) {
+      console.error("User does not have staff role:", roleError || 'No role found');
+      return new Response(
+        JSON.stringify({ success: false, error: 'Forbidden - Staff access required' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Use service role for webhook settings (admin-only table)
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
     const { visitor, eventType } = await req.json() as { visitor: Visitor; eventType: 'checkin' | 'checkout' };
 
     console.log(`Processing ${eventType} notification for visitor:`, visitor.full_name);
 
-    // Fetch active webhooks
-    const { data: webhooks, error: webhookError } = await supabase
+    // Validate visitor exists in database
+    if (visitor.id) {
+      const { data: visitorData, error: visitorError } = await supabaseUser
+        .from('visitors')
+        .select('id')
+        .eq('id', visitor.id)
+        .maybeSingle();
+
+      if (visitorError || !visitorData) {
+        console.error("Visitor not found:", visitorError);
+        return new Response(
+          JSON.stringify({ success: false, error: 'Visitor not found' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    // Fetch active webhooks using service role
+    const { data: webhooks, error: webhookError } = await supabaseAdmin
       .from('webhook_settings')
       .select('*')
       .eq('is_active', true);
@@ -70,9 +142,22 @@ serve(async (req) => {
 
     console.log(`Found ${activeWebhooks.length} active webhooks for ${eventType}`);
 
+    // Sanitize visitor data for webhook messages
+    const safeVisitor: Visitor = {
+      ...visitor,
+      full_name: escapeText(visitor.full_name),
+      badge_id: escapeText(visitor.badge_id),
+      company_name: escapeText(visitor.company_name),
+      host_name: escapeText(visitor.host_name),
+      purpose: escapeText(visitor.purpose),
+      phone_number: escapeText(visitor.phone_number),
+      email: visitor.email ? escapeText(visitor.email) : null,
+      host_email: visitor.host_email ? escapeText(visitor.host_email) : null,
+    };
+
     const results = await Promise.allSettled(
       activeWebhooks.map(async (webhook) => {
-        const message = formatMessage(visitor, eventType, webhook.webhook_type);
+        const message = formatMessage(safeVisitor, eventType, webhook.webhook_type);
         
         console.log(`Sending ${webhook.webhook_type} notification to ${webhook.name}`);
         
