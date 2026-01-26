@@ -364,7 +364,8 @@ export function VisitorForm({ onSubmit }: VisitorFormProps) {
                   <Camera className="w-6 h-6 text-muted-foreground" />
                 </div>
               )}
-              <div className="flex-1">
+              <div className="flex-1 space-y-2">
+                {/* Hidden file input for gallery upload */}
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -372,16 +373,36 @@ export function VisitorForm({ onSubmit }: VisitorFormProps) {
                   onChange={handlePhotoChange}
                   className="hidden"
                 />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  {photoPreview ? 'Change Photo' : 'Upload Photo'}
-                </Button>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Take a photo or upload from device
+                {/* Camera capture input - uses capture attribute for mobile */}
+                <input
+                  id="camera-capture"
+                  type="file"
+                  accept="image/*"
+                  capture="user"
+                  onChange={handlePhotoChange}
+                  className="hidden"
+                />
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => document.getElementById('camera-capture')?.click()}
+                  >
+                    <Camera className="w-4 h-4 mr-1" />
+                    Take Photo
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    {photoPreview ? 'Change' : 'Upload'}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Capture directly or upload from device
                 </p>
               </div>
             </div>
