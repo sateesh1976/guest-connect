@@ -118,11 +118,11 @@ export default function Auth() {
   };
 
   const switchMode = () => {
+    setError(null);
+    loginForm.reset({ email: '', password: '' });
+    signupForm.reset({ displayName: '', email: '', password: '', confirmPassword: '' });
     setIsLogin(!isLogin);
     setIsForgotPassword(false);
-    setError(null);
-    loginForm.reset();
-    signupForm.reset();
   };
 
   return (
@@ -262,7 +262,7 @@ export default function Auth() {
             </Form>
           ) : (
             <Form {...signupForm}>
-              <form onSubmit={signupForm.handleSubmit(handleSignup)} className="space-y-4">
+              <form onSubmit={signupForm.handleSubmit(handleSignup)} className="space-y-4" autoComplete="off">
                 <FormField
                   control={signupForm.control}
                   name="displayName"
@@ -276,6 +276,7 @@ export default function Auth() {
                         <Input 
                           placeholder="John Smith" 
                           className="input-focus"
+                          autoComplete="name"
                           {...field} 
                         />
                       </FormControl>
@@ -298,6 +299,7 @@ export default function Auth() {
                           type="email"
                           placeholder="john@company.com" 
                           className="input-focus"
+                          autoComplete="email"
                           {...field} 
                         />
                       </FormControl>
