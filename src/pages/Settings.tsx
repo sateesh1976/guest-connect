@@ -13,6 +13,7 @@ import {
   MessageSquare
 } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
+import { AuditLogViewer } from '@/components/settings/AuditLogViewer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
@@ -358,6 +359,11 @@ export default function Settings() {
             ))}
           </div>
         )}
+      </div>
+
+      {/* Audit Logs Section */}
+      <div className="mt-8">
+        <AuditLogViewer />
       </div>
     </AppLayout>
   );
