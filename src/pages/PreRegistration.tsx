@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { format, isToday, isTomorrow, isPast, parseISO } from 'date-fns';
-import { Plus, Calendar, Clock, Building2, User, XCircle, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Plus, Calendar, Clock, Building2, User, XCircle, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -9,6 +9,7 @@ import { usePreRegistrations, PreRegistrationFormData } from '@/hooks/usePreRegi
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
@@ -17,14 +18,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
 import {
   Select,
   SelectContent,
@@ -41,15 +34,17 @@ import {
 } from '@/components/ui/card';
 
 const formSchema = z.object({
-  visitor_name: z.string().min(2, 'Name must be at least 2 characters'),
-  visitor_email: z.string().email('Invalid email').optional().or(z.literal('')),
-  visitor_phone: z.string().optional(),
-  visitor_company: z.string().optional(),
+  visitor_name: z.string().trim().min(2, 'Name must be at least 2 characters').max(100),
+  visitor_email: z.string().trim().email('Invalid email').max(255).optional().or(z.literal('')),
+  visitor_phone: z.string().trim().max(20).optional(),
+  visitor_company: z.string().trim().max(100).optional(),
   expected_date: z.string().min(1, 'Date is required'),
   expected_time: z.string().optional(),
-  purpose: z.string().optional(),
-  notes: z.string().optional(),
+  purpose: z.string().trim().max(200).optional(),
+  notes: z.string().trim().max(500).optional(),
 });
+
+type FormData = z.infer<typeof formSchema>;
 
 const statusConfig = {
   pending: { label: 'Pending', icon: Clock, className: 'bg-warning/10 text-warning border-warning/20' },
@@ -61,9 +56,10 @@ const statusConfig = {
 const PreRegistration = () => {
   const { preRegistrations, isLoading, addPreRegistration, cancelPreRegistration } = usePreRegistrations();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [filter, setFilter] = useState<'all' | 'pending' | 'today'>('pending');
 
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       visitor_name: '',
@@ -75,24 +71,30 @@ const PreRegistration = () => {
       purpose: '',
       notes: '',
     },
+    mode: 'onBlur',
   });
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    const formData: PreRegistrationFormData = {
-      visitor_name: values.visitor_name,
-      visitor_email: values.visitor_email || undefined,
-      visitor_phone: values.visitor_phone || undefined,
-      visitor_company: values.visitor_company || undefined,
-      expected_date: values.expected_date,
-      expected_time: values.expected_time || undefined,
-      purpose: values.purpose || undefined,
-      notes: values.notes || undefined,
-    };
+  const onSubmit = async (values: FormData) => {
+    setIsSubmitting(true);
+    try {
+      const formData: PreRegistrationFormData = {
+        visitor_name: values.visitor_name.trim(),
+        visitor_email: values.visitor_email?.trim() || undefined,
+        visitor_phone: values.visitor_phone?.trim() || undefined,
+        visitor_company: values.visitor_company?.trim() || undefined,
+        expected_date: values.expected_date,
+        expected_time: values.expected_time || undefined,
+        purpose: values.purpose?.trim() || undefined,
+        notes: values.notes?.trim() || undefined,
+      };
 
-    const result = await addPreRegistration(formData);
-    if (result) {
-      form.reset();
-      setIsDialogOpen(false);
+      const result = await addPreRegistration(formData);
+      if (result) {
+        form.reset();
+        setIsDialogOpen(false);
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -112,8 +114,9 @@ const PreRegistration = () => {
   if (isLoading) {
     return (
       <AppLayout>
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        <div className="flex flex-col items-center justify-center h-64 gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">Loading pre-registrations...</p>
         </div>
       </AppLayout>
     );
@@ -125,155 +128,146 @@ const PreRegistration = () => {
 
   return (
     <AppLayout>
-      <div className="flex justify-between items-start mb-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-8">
         <div>
           <h1 className="text-2xl font-semibold text-foreground mb-1">Pre-Registration</h1>
           <p className="text-muted-foreground">Pre-register expected visitors for streamlined check-in</p>
         </div>
 
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isDialogOpen} onOpenChange={(open) => {
+          setIsDialogOpen(open);
+          if (!open) {
+            form.reset();
+          }
+        }}>
           <DialogTrigger asChild>
             <Button className="btn-primary">
               <Plus className="h-4 w-4 mr-2" />
               Pre-Register Visitor
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Pre-Register Visitor</DialogTitle>
             </DialogHeader>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="visitor_name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Visitor Name *</FormLabel>
-                      <FormControl>
-                        <Input placeholder="John Doe" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="visitor_name">Visitor Name *</Label>
+                <Input 
+                  id="visitor_name"
+                  placeholder="John Doe" 
+                  autoComplete="name"
+                  {...form.register('visitor_name')} 
                 />
+                {form.formState.errors.visitor_name && (
+                  <p className="text-sm text-destructive">{form.formState.errors.visitor_name.message}</p>
+                )}
+              </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="visitor_email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input type="email" placeholder="john@example.com" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="visitor_email">Email</Label>
+                  <Input 
+                    id="visitor_email"
+                    type="email" 
+                    placeholder="john@example.com" 
+                    autoComplete="email"
+                    {...form.register('visitor_email')} 
                   />
-                  <FormField
-                    control={form.control}
-                    name="visitor_phone"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Phone</FormLabel>
-                        <FormControl>
-                          <Input placeholder="+1 234 567 890" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+                  {form.formState.errors.visitor_email && (
+                    <p className="text-sm text-destructive">{form.formState.errors.visitor_email.message}</p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="visitor_phone">Phone</Label>
+                  <Input 
+                    id="visitor_phone"
+                    placeholder="+1 234 567 890" 
+                    autoComplete="tel"
+                    {...form.register('visitor_phone')} 
                   />
                 </div>
+              </div>
 
-                <FormField
-                  control={form.control}
-                  name="visitor_company"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Company</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Acme Corp" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+              <div className="space-y-2">
+                <Label htmlFor="visitor_company">Company</Label>
+                <Input 
+                  id="visitor_company"
+                  placeholder="Acme Corp" 
+                  autoComplete="organization"
+                  {...form.register('visitor_company')} 
                 />
+              </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="expected_date"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Expected Date *</FormLabel>
-                        <FormControl>
-                          <Input type="date" min={new Date().toISOString().split('T')[0]} {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="expected_date">Expected Date *</Label>
+                  <Input 
+                    id="expected_date"
+                    type="date" 
+                    min={new Date().toISOString().split('T')[0]} 
+                    {...form.register('expected_date')} 
                   />
-                  <FormField
-                    control={form.control}
-                    name="expected_time"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Expected Time</FormLabel>
-                        <FormControl>
-                          <Input type="time" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+                  {form.formState.errors.expected_date && (
+                    <p className="text-sm text-destructive">{form.formState.errors.expected_date.message}</p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="expected_time">Expected Time</Label>
+                  <Input 
+                    id="expected_time"
+                    type="time" 
+                    {...form.register('expected_time')} 
                   />
                 </div>
+              </div>
 
-                <FormField
-                  control={form.control}
-                  name="purpose"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Purpose of Visit</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Meeting, Interview, Delivery..." {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+              <div className="space-y-2">
+                <Label htmlFor="purpose">Purpose of Visit</Label>
+                <Input 
+                  id="purpose"
+                  placeholder="Meeting, Interview, Delivery..." 
+                  {...form.register('purpose')} 
                 />
+              </div>
 
-                <FormField
-                  control={form.control}
-                  name="notes"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Notes</FormLabel>
-                      <FormControl>
-                        <Textarea placeholder="Any additional notes..." {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+              <div className="space-y-2">
+                <Label htmlFor="notes">Notes</Label>
+                <Textarea 
+                  id="notes"
+                  placeholder="Any additional notes..." 
+                  className="resize-none"
+                  {...form.register('notes')} 
                 />
+              </div>
 
-                <div className="flex justify-end gap-3 pt-4">
-                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button type="submit" className="btn-primary">
-                    Pre-Register
-                  </Button>
-                </div>
-              </form>
-            </Form>
+              <div className="flex justify-end gap-3 pt-4">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setIsDialogOpen(false)}
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" className="btn-primary" disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    'Pre-Register'
+                  )}
+                </Button>
+              </div>
+            </form>
           </DialogContent>
         </Dialog>
       </div>
 
       {/* Stats & Filter */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-4">
           <Badge variant="outline" className="py-1.5 px-3">
             <Calendar className="h-4 w-4 mr-2" />
@@ -296,48 +290,66 @@ const PreRegistration = () => {
       {filteredRegistrations.length === 0 ? (
         <Card className="card-elevated">
           <CardContent className="py-12 text-center">
-            <Calendar className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-            <p className="text-muted-foreground">No pre-registrations found</p>
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
+              <Calendar className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <p className="font-medium text-foreground mb-1">No pre-registrations found</p>
+            <p className="text-sm text-muted-foreground mb-4">
+              {filter === 'pending' 
+                ? 'All pending registrations will appear here'
+                : filter === 'today'
+                  ? 'No visitors expected today'
+                  : 'Start by pre-registering expected visitors'}
+            </p>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsDialogOpen(true)}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Pre-Register Visitor
+            </Button>
           </CardContent>
         </Card>
       ) : (
         <div className="grid gap-4">
           {filteredRegistrations.map((pr) => {
-            const StatusIcon = statusConfig[pr.status].icon;
+            const StatusIcon = statusConfig[pr.status as keyof typeof statusConfig]?.icon || Clock;
             const isExpired = pr.status === 'pending' && isPast(parseISO(pr.expected_date + 'T23:59:59'));
+            const displayStatus = isExpired ? 'expired' : pr.status;
+            const config = statusConfig[displayStatus as keyof typeof statusConfig] || statusConfig.pending;
             
             return (
               <Card key={pr.id} className="card-elevated">
                 <CardHeader className="pb-2">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-primary/10">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="p-2 rounded-lg bg-primary/10 shrink-0">
                         <User className="h-5 w-5 text-primary" />
                       </div>
-                      <div>
-                        <CardTitle className="text-lg">{pr.visitor_name}</CardTitle>
-                        <CardDescription className="flex items-center gap-2">
+                      <div className="min-w-0">
+                        <CardTitle className="text-lg truncate">{pr.visitor_name}</CardTitle>
+                        <CardDescription className="flex items-center gap-2 flex-wrap">
                           {pr.visitor_company && (
-                            <>
+                            <span className="flex items-center gap-1">
                               <Building2 className="h-3 w-3" />
                               {pr.visitor_company}
-                            </>
+                            </span>
                           )}
                           {pr.visitor_email && (
-                            <span className="text-xs">• {pr.visitor_email}</span>
+                            <span className="text-xs truncate">• {pr.visitor_email}</span>
                           )}
                         </CardDescription>
                       </div>
                     </div>
-                    <Badge className={statusConfig[isExpired ? 'expired' : pr.status].className}>
+                    <Badge className={config.className}>
                       <StatusIcon className="h-3 w-3 mr-1" />
-                      {statusConfig[isExpired ? 'expired' : pr.status].label}
+                      {config.label}
                     </Badge>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
                       <span className="flex items-center gap-1">
                         <Calendar className="h-4 w-4" />
                         {getDateLabel(pr.expected_date)}
@@ -356,7 +368,7 @@ const PreRegistration = () => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="text-destructive hover:text-destructive"
+                        className="text-destructive hover:text-destructive shrink-0"
                         onClick={() => cancelPreRegistration(pr.id)}
                       >
                         <XCircle className="h-4 w-4 mr-1" />

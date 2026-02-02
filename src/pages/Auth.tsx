@@ -3,32 +3,25 @@ import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Building2, Mail, Lock, User, ArrowRight, AlertCircle, ArrowLeft } from 'lucide-react';
+import { Building2, Mail, Lock, User, ArrowRight, AlertCircle, ArrowLeft, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
 
 const loginSchema = z.object({
-  email: z.string().email('Please enter a valid email'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  email: z.string().trim().email('Please enter a valid email').max(255),
+  password: z.string().min(6, 'Password must be at least 6 characters').max(72),
 });
 
 const signupSchema = z.object({
-  displayName: z.string().min(2, 'Name must be at least 2 characters'),
-  email: z.string().email('Please enter a valid email'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-  confirmPassword: z.string().min(6, 'Please confirm your password'),
+  displayName: z.string().trim().min(2, 'Name must be at least 2 characters').max(100),
+  email: z.string().trim().email('Please enter a valid email').max(255),
+  password: z.string().min(6, 'Password must be at least 6 characters').max(72),
+  confirmPassword: z.string().min(6, 'Please confirm your password').max(72),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
@@ -54,22 +47,26 @@ export default function Auth() {
   const loginForm = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: '', password: '' },
+    mode: 'onBlur',
   });
 
   const signupForm = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema),
     defaultValues: { displayName: '', email: '', password: '', confirmPassword: '' },
+    mode: 'onBlur',
   });
 
   const handleLogin = async (data: LoginFormData) => {
     setError(null);
     setIsSubmitting(true);
-    const { error } = await signIn(data.email, data.password);
+    const { error } = await signIn(data.email.trim(), data.password);
     setIsSubmitting(false);
     
     if (error) {
       if (error.message.includes('Invalid login credentials')) {
         setError('Invalid email or password. Please try again.');
+      } else if (error.message.includes('Email not confirmed')) {
+        setError('Please check your email and confirm your account before signing in.');
       } else {
         setError(error.message);
       }
@@ -79,21 +76,35 @@ export default function Auth() {
   const handleSignup = async (data: SignupFormData) => {
     setError(null);
     setIsSubmitting(true);
-    const { error } = await signUp(data.email, data.password, data.displayName);
+    const { error } = await signUp(data.email.trim(), data.password, data.displayName.trim());
     setIsSubmitting(false);
     
     if (error) {
       if (error.message.includes('already registered')) {
         setError('This email is already registered. Please sign in instead.');
+      } else if (error.message.includes('rate limit')) {
+        setError('Too many attempts. Please wait a moment before trying again.');
       } else {
         setError(error.message);
       }
+    } else {
+      toast({
+        title: "Account created",
+        description: "Please check your email to confirm your account.",
+      });
     }
   };
 
-  const handleForgotPassword = async (email: string) => {
+  const handleForgotPassword = async () => {
+    const email = loginForm.getValues('email')?.trim();
     if (!email) {
       setError('Please enter your email address');
+      return;
+    }
+    
+    const emailValidation = z.string().email();
+    if (!emailValidation.safeParse(email).success) {
+      setError('Please enter a valid email address');
       return;
     }
     
@@ -119,10 +130,16 @@ export default function Auth() {
 
   const switchMode = () => {
     setError(null);
-    loginForm.reset({ email: '', password: '' });
-    signupForm.reset({ displayName: '', email: '', password: '', confirmPassword: '' });
     setIsLogin(!isLogin);
     setIsForgotPassword(false);
+    // Reset forms after mode switch to ensure clean state
+    setTimeout(() => {
+      if (!isLogin) {
+        loginForm.reset({ email: '', password: '' });
+      } else {
+        signupForm.reset({ displayName: '', email: '', password: '', confirmPassword: '' });
+      }
+    }, 0);
   };
 
   return (
@@ -154,17 +171,18 @@ export default function Auth() {
 
           {isForgotPassword ? (
             <div className="space-y-4">
-              <div>
-                <label className="flex items-center gap-2 text-sm font-medium mb-2">
+              <div className="space-y-2">
+                <Label htmlFor="forgot-email" className="flex items-center gap-2">
                   <Mail className="w-4 h-4 text-muted-foreground" />
                   Email
-                </label>
+                </Label>
                 <Input 
+                  id="forgot-email"
                   type="email"
                   placeholder="admin@company.com" 
                   className="input-focus"
-                  value={loginForm.watch('email')}
-                  onChange={(e) => loginForm.setValue('email', e.target.value)}
+                  autoComplete="email"
+                  {...loginForm.register('email')}
                 />
               </div>
 
@@ -172,10 +190,19 @@ export default function Auth() {
                 type="button"
                 className="w-full btn-primary h-12"
                 disabled={isSubmitting}
-                onClick={() => handleForgotPassword(loginForm.watch('email'))}
+                onClick={handleForgotPassword}
               >
-                {isSubmitting ? 'Sending...' : 'Send Reset Link'}
-                <ArrowRight className="w-4 h-4 ml-2" />
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    Send Reset Link
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </>
+                )}
               </Button>
 
               <button
@@ -191,177 +218,169 @@ export default function Auth() {
               </button>
             </div>
           ) : isLogin ? (
-            <Form {...loginForm}>
-              <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
-                <FormField
-                  control={loginForm.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center gap-2">
-                        <Mail className="w-4 h-4 text-muted-foreground" />
-                        Email
-                      </FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="email"
-                          placeholder="admin@company.com" 
-                          className="input-focus"
-                          {...field} 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+            <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="login-email" className="flex items-center gap-2">
+                  <Mail className="w-4 h-4 text-muted-foreground" />
+                  Email
+                </Label>
+                <Input 
+                  id="login-email"
+                  type="email"
+                  placeholder="admin@company.com" 
+                  className="input-focus"
+                  autoComplete="email"
+                  {...loginForm.register('email')}
                 />
+                {loginForm.formState.errors.email && (
+                  <p className="text-sm text-destructive">{loginForm.formState.errors.email.message}</p>
+                )}
+              </div>
 
-                <FormField
-                  control={loginForm.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center gap-2">
-                        <Lock className="w-4 h-4 text-muted-foreground" />
-                        Password
-                      </FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="password"
-                          placeholder="••••••••" 
-                          className="input-focus"
-                          {...field} 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+              <div className="space-y-2">
+                <Label htmlFor="login-password" className="flex items-center gap-2">
+                  <Lock className="w-4 h-4 text-muted-foreground" />
+                  Password
+                </Label>
+                <Input 
+                  id="login-password"
+                  type="password"
+                  placeholder="••••••••" 
+                  className="input-focus"
+                  autoComplete="current-password"
+                  {...loginForm.register('password')}
                 />
+                {loginForm.formState.errors.password && (
+                  <p className="text-sm text-destructive">{loginForm.formState.errors.password.message}</p>
+                )}
+              </div>
 
-                <div className="text-right">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsForgotPassword(true);
-                      setError(null);
-                    }}
-                    className="text-sm text-primary hover:underline"
-                  >
-                    Forgot password?
-                  </button>
-                </div>
-
-                <Button 
-                  type="submit" 
-                  className="w-full btn-primary h-12"
-                  disabled={isSubmitting}
+              <div className="text-right">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsForgotPassword(true);
+                    setError(null);
+                  }}
+                  className="text-sm text-primary hover:underline"
                 >
-                  {isSubmitting ? 'Signing in...' : 'Sign In'}
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </form>
-            </Form>
+                  Forgot password?
+                </button>
+              </div>
+
+              <Button 
+                type="submit" 
+                className="w-full btn-primary h-12"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Signing in...
+                  </>
+                ) : (
+                  <>
+                    Sign In
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </>
+                )}
+              </Button>
+            </form>
           ) : (
-            <Form {...signupForm}>
-              <form onSubmit={signupForm.handleSubmit(handleSignup)} className="space-y-4" autoComplete="off">
-                <FormField
-                  control={signupForm.control}
-                  name="displayName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center gap-2">
-                        <User className="w-4 h-4 text-muted-foreground" />
-                        Full Name
-                      </FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="John Smith" 
-                          className="input-focus"
-                          autoComplete="name"
-                          {...field} 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+            <form 
+              onSubmit={signupForm.handleSubmit(handleSignup)} 
+              className="space-y-4"
+            >
+              <div className="space-y-2">
+                <Label htmlFor="signup-name" className="flex items-center gap-2">
+                  <User className="w-4 h-4 text-muted-foreground" />
+                  Full Name
+                </Label>
+                <Input 
+                  id="signup-name"
+                  type="text"
+                  placeholder="John Smith" 
+                  className="input-focus"
+                  autoComplete="name"
+                  {...signupForm.register('displayName')}
                 />
+                {signupForm.formState.errors.displayName && (
+                  <p className="text-sm text-destructive">{signupForm.formState.errors.displayName.message}</p>
+                )}
+              </div>
 
-                <FormField
-                  control={signupForm.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center gap-2">
-                        <Mail className="w-4 h-4 text-muted-foreground" />
-                        Email
-                      </FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="email"
-                          placeholder="john@company.com" 
-                          className="input-focus"
-                          autoComplete="email"
-                          {...field} 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+              <div className="space-y-2">
+                <Label htmlFor="signup-email" className="flex items-center gap-2">
+                  <Mail className="w-4 h-4 text-muted-foreground" />
+                  Email
+                </Label>
+                <Input 
+                  id="signup-email"
+                  type="email"
+                  placeholder="john@company.com" 
+                  className="input-focus"
+                  autoComplete="email"
+                  {...signupForm.register('email')}
                 />
+                {signupForm.formState.errors.email && (
+                  <p className="text-sm text-destructive">{signupForm.formState.errors.email.message}</p>
+                )}
+              </div>
 
-                <FormField
-                  control={signupForm.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center gap-2">
-                        <Lock className="w-4 h-4 text-muted-foreground" />
-                        Password
-                      </FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="password"
-                          placeholder="••••••••" 
-                          className="input-focus"
-                          {...field} 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+              <div className="space-y-2">
+                <Label htmlFor="signup-password" className="flex items-center gap-2">
+                  <Lock className="w-4 h-4 text-muted-foreground" />
+                  Password
+                </Label>
+                <Input 
+                  id="signup-password"
+                  type="password"
+                  placeholder="••••••••" 
+                  className="input-focus"
+                  autoComplete="new-password"
+                  {...signupForm.register('password')}
                 />
+                {signupForm.formState.errors.password && (
+                  <p className="text-sm text-destructive">{signupForm.formState.errors.password.message}</p>
+                )}
+              </div>
 
-                <FormField
-                  control={signupForm.control}
-                  name="confirmPassword"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center gap-2">
-                        <Lock className="w-4 h-4 text-muted-foreground" />
-                        Confirm Password
-                      </FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="password"
-                          placeholder="••••••••" 
-                          className="input-focus"
-                          {...field} 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+              <div className="space-y-2">
+                <Label htmlFor="signup-confirm" className="flex items-center gap-2">
+                  <Lock className="w-4 h-4 text-muted-foreground" />
+                  Confirm Password
+                </Label>
+                <Input 
+                  id="signup-confirm"
+                  type="password"
+                  placeholder="••••••••" 
+                  className="input-focus"
+                  autoComplete="new-password"
+                  {...signupForm.register('confirmPassword')}
                 />
+                {signupForm.formState.errors.confirmPassword && (
+                  <p className="text-sm text-destructive">{signupForm.formState.errors.confirmPassword.message}</p>
+                )}
+              </div>
 
-                <Button 
-                  type="submit" 
-                  className="w-full btn-primary h-12"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? 'Creating account...' : 'Create Account'}
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </form>
-            </Form>
+              <Button 
+                type="submit" 
+                className="w-full btn-primary h-12"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Creating account...
+                  </>
+                ) : (
+                  <>
+                    Create Account
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </>
+                )}
+              </Button>
+            </form>
           )}
 
           {/* Toggle */}
