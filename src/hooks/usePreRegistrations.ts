@@ -43,7 +43,7 @@ export function usePreRegistrations() {
 
     setIsLoading(true);
     const { data, error } = await supabase
-      .from('pre_registrations' as any)
+      .from('pre_registrations')
       .select('*')
       .order('expected_date', { ascending: true })
       .order('expected_time', { ascending: true });
@@ -90,7 +90,7 @@ export function usePreRegistrations() {
     };
 
     const { data, error } = await supabase
-      .from('pre_registrations' as any)
+      .from('pre_registrations')
       .insert(newPreReg)
       .select()
       .single();
@@ -117,7 +117,7 @@ export function usePreRegistrations() {
 
   const updatePreRegistrationStatus = async (id: string, status: PreRegistration['status']): Promise<boolean> => {
     const { error } = await supabase
-      .from('pre_registrations' as any)
+      .from('pre_registrations')
       .update({ status })
       .eq('id', id);
 

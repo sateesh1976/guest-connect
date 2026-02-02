@@ -56,6 +56,60 @@ export type Database = {
         }
         Relationships: []
       }
+      pre_registrations: {
+        Row: {
+          created_at: string
+          expected_date: string
+          expected_time: string | null
+          host_email: string | null
+          host_name: string
+          host_user_id: string
+          id: string
+          notes: string | null
+          purpose: string | null
+          status: string
+          updated_at: string
+          visitor_company: string | null
+          visitor_email: string | null
+          visitor_name: string
+          visitor_phone: string | null
+        }
+        Insert: {
+          created_at?: string
+          expected_date: string
+          expected_time?: string | null
+          host_email?: string | null
+          host_name: string
+          host_user_id: string
+          id?: string
+          notes?: string | null
+          purpose?: string | null
+          status?: string
+          updated_at?: string
+          visitor_company?: string | null
+          visitor_email?: string | null
+          visitor_name: string
+          visitor_phone?: string | null
+        }
+        Update: {
+          created_at?: string
+          expected_date?: string
+          expected_time?: string | null
+          host_email?: string | null
+          host_name?: string
+          host_user_id?: string
+          id?: string
+          notes?: string | null
+          purpose?: string | null
+          status?: string
+          updated_at?: string
+          visitor_company?: string | null
+          visitor_email?: string | null
+          visitor_name?: string
+          visitor_phone?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string

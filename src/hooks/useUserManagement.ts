@@ -86,32 +86,32 @@ export function useUserManagement() {
       return false;
     }
 
-    // Check if user already has a role
-    const { data: existingRole } = await supabase
+    // Use delete + insert pattern to comply with RLS policy that blocks direct updates
+    // This creates a proper audit trail with two separate events
+    
+    // Delete existing role first
+    const { error: deleteError } = await supabase
       .from('user_roles')
-      .select('id')
-      .eq('user_id', userId)
-      .single();
+      .delete()
+      .eq('user_id', userId);
 
-    let error;
-
-    if (existingRole) {
-      // Update existing role
-      const result = await supabase
-        .from('user_roles')
-        .update({ role: newRole })
-        .eq('user_id', userId);
-      error = result.error;
-    } else {
-      // Insert new role
-      const result = await supabase
-        .from('user_roles')
-        .insert({ user_id: userId, role: newRole });
-      error = result.error;
+    if (deleteError) {
+      console.error('Error deleting role:', deleteError);
+      toast({
+        title: 'Error',
+        description: 'Failed to update user role',
+        variant: 'destructive',
+      });
+      return false;
     }
 
-    if (error) {
-      console.error('Error updating role:', error);
+    // Insert new role
+    const { error: insertError } = await supabase
+      .from('user_roles')
+      .insert({ user_id: userId, role: newRole });
+
+    if (insertError) {
+      console.error('Error inserting role:', insertError);
       toast({
         title: 'Error',
         description: 'Failed to update user role',
