@@ -13,19 +13,14 @@ import {
   ArrowRight,
   QrCode,
   Camera,
-  X
+  X,
+  Upload,
+  Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+import { Label } from '@/components/ui/label';
 import { Visitor } from '@/types/visitor';
 import { VisitorQRCode } from './VisitorQRCode';
 import { format } from 'date-fns';
@@ -41,13 +36,13 @@ interface VisitorFormData {
 }
 
 const formSchema = z.object({
-  fullName: z.string().min(2, 'Name must be at least 2 characters').max(100),
-  phoneNumber: z.string().min(10, 'Please enter a valid phone number').max(20),
-  email: z.string().email('Please enter a valid email').optional().or(z.literal('')),
-  companyName: z.string().min(2, 'Company name is required').max(100),
-  hostName: z.string().min(2, 'Host name is required').max(100),
-  hostEmail: z.string().email('Please enter a valid email').optional().or(z.literal('')),
-  purpose: z.string().min(5, 'Please describe your purpose of visit').max(500),
+  fullName: z.string().trim().min(2, 'Name must be at least 2 characters').max(100, 'Name is too long'),
+  phoneNumber: z.string().trim().min(10, 'Please enter a valid phone number').max(20, 'Phone number is too long'),
+  email: z.string().trim().email('Please enter a valid email').max(255).optional().or(z.literal('')),
+  companyName: z.string().trim().min(2, 'Company name is required').max(100, 'Company name is too long'),
+  hostName: z.string().trim().min(2, 'Host name is required').max(100, 'Host name is too long'),
+  hostEmail: z.string().trim().email('Please enter a valid email').max(255).optional().or(z.literal('')),
+  purpose: z.string().trim().min(5, 'Please describe your purpose of visit').max(500, 'Purpose is too long'),
 });
 
 interface VisitorFormProps {
@@ -56,27 +51,55 @@ interface VisitorFormProps {
 
 export function VisitorForm({ onSubmit }: VisitorFormProps) {
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [createdVisitor, setCreatedVisitor] = useState<Visitor | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoError, setPhotoError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+
+  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+  const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPhotoPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+    setPhotoError(null);
+    
+    if (!file) return;
+    
+    // Validate file type
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      setPhotoError('Please upload a valid image (JPEG, PNG, or WebP)');
+      return;
     }
+    
+    // Validate file size
+    if (file.size > MAX_FILE_SIZE) {
+      setPhotoError('Image must be less than 5MB');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPhotoPreview(reader.result as string);
+    };
+    reader.onerror = () => {
+      setPhotoError('Failed to read image file');
+    };
+    reader.readAsDataURL(file);
   };
 
   const clearPhoto = () => {
     setPhotoPreview(null);
+    setPhotoError(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
+    if (cameraInputRef.current) {
+      cameraInputRef.current.value = '';
+    }
   };
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -88,21 +111,29 @@ export function VisitorForm({ onSubmit }: VisitorFormProps) {
       hostEmail: '',
       purpose: '',
     },
+    mode: 'onBlur',
   });
 
   const handleSubmit = async (values: z.infer<typeof formSchema>) => {
-    const formData: VisitorFormData = {
-      fullName: values.fullName,
-      phoneNumber: values.phoneNumber,
-      companyName: values.companyName,
-      hostName: values.hostName,
-      purpose: values.purpose,
-      email: values.email || undefined,
-      hostEmail: values.hostEmail || undefined,
-    };
-    const visitor = await onSubmit(formData);
-    setCreatedVisitor(visitor);
-    setIsSubmitted(true);
+    setIsSubmitting(true);
+    try {
+      const formData: VisitorFormData = {
+        fullName: values.fullName.trim(),
+        phoneNumber: values.phoneNumber.trim(),
+        companyName: values.companyName.trim(),
+        hostName: values.hostName.trim(),
+        purpose: values.purpose.trim(),
+        email: values.email?.trim() || undefined,
+        hostEmail: values.hostEmail?.trim() || undefined,
+      };
+      const visitor = await onSubmit(formData);
+      setCreatedVisitor(visitor);
+      setIsSubmitted(true);
+    } catch (error) {
+      console.error('Check-in failed:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleNewCheckIn = () => {
@@ -110,8 +141,12 @@ export function VisitorForm({ onSubmit }: VisitorFormProps) {
     setIsSubmitted(false);
     setCreatedVisitor(null);
     setPhotoPreview(null);
+    setPhotoError(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
+    }
+    if (cameraInputRef.current) {
+      cameraInputRef.current.value = '';
     }
   };
 
@@ -202,242 +237,231 @@ export function VisitorForm({ onSubmit }: VisitorFormProps) {
         </p>
       </div>
 
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-          <div className="grid md:grid-cols-2 gap-6">
-            <FormField
-              control={form.control}
-              name="fullName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="flex items-center gap-2">
-                    <User className="w-4 h-4 text-muted-foreground" />
-                    Full Name *
-                  </FormLabel>
-                  <FormControl>
-                    <Input 
-                      placeholder="John Smith" 
-                      className="input-focus"
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+        <div className="grid md:grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <Label htmlFor="fullName" className="flex items-center gap-2">
+              <User className="w-4 h-4 text-muted-foreground" />
+              Full Name *
+            </Label>
+            <Input 
+              id="fullName"
+              placeholder="John Smith" 
+              className="input-focus"
+              autoComplete="name"
+              {...form.register('fullName')}
             />
-
-            <FormField
-              control={form.control}
-              name="phoneNumber"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="flex items-center gap-2">
-                    <Phone className="w-4 h-4 text-muted-foreground" />
-                    Phone Number *
-                  </FormLabel>
-                  <FormControl>
-                    <Input 
-                      placeholder="+1 555-0123" 
-                      className="input-focus"
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="flex items-center gap-2">
-                    <Mail className="w-4 h-4 text-muted-foreground" />
-                    Email (Optional)
-                  </FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="email"
-                      placeholder="john@company.com" 
-                      className="input-focus"
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="companyName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="flex items-center gap-2">
-                    <Building className="w-4 h-4 text-muted-foreground" />
-                    Company Name *
-                  </FormLabel>
-                  <FormControl>
-                    <Input 
-                      placeholder="Acme Corporation" 
-                      className="input-focus"
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="hostName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="flex items-center gap-2">
-                    <UserCheck className="w-4 h-4 text-muted-foreground" />
-                    Person to Visit *
-                  </FormLabel>
-                  <FormControl>
-                    <Input 
-                      placeholder="Jane Doe" 
-                      className="input-focus"
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="hostEmail"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="flex items-center gap-2">
-                    <Mail className="w-4 h-4 text-muted-foreground" />
-                    Host Email (Optional)
-                  </FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="email"
-                      placeholder="jane.doe@company.com" 
-                      className="input-focus"
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {form.formState.errors.fullName && (
+              <p className="text-sm text-destructive">{form.formState.errors.fullName.message}</p>
+            )}
           </div>
 
-          {/* Photo Upload */}
           <div className="space-y-2">
-            <label className="flex items-center gap-2 text-sm font-medium">
-              <Camera className="w-4 h-4 text-muted-foreground" />
-              Photo (Optional)
-            </label>
-            <div className="flex items-center gap-4">
-              {photoPreview ? (
-                <div className="relative">
-                  <img 
-                    src={photoPreview} 
-                    alt="Visitor preview" 
-                    className="w-20 h-20 rounded-xl object-cover border border-border"
-                  />
-                  <button
-                    type="button"
-                    onClick={clearPhoto}
-                    className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center shadow-md"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </div>
-              ) : (
-                <div 
-                  onClick={() => fileInputRef.current?.click()}
-                  className="w-20 h-20 rounded-xl border-2 border-dashed border-border hover:border-primary/50 flex items-center justify-center cursor-pointer transition-colors bg-secondary/30"
+            <Label htmlFor="phoneNumber" className="flex items-center gap-2">
+              <Phone className="w-4 h-4 text-muted-foreground" />
+              Phone Number *
+            </Label>
+            <Input 
+              id="phoneNumber"
+              placeholder="+1 555-0123" 
+              className="input-focus"
+              autoComplete="tel"
+              {...form.register('phoneNumber')}
+            />
+            {form.formState.errors.phoneNumber && (
+              <p className="text-sm text-destructive">{form.formState.errors.phoneNumber.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="email" className="flex items-center gap-2">
+              <Mail className="w-4 h-4 text-muted-foreground" />
+              Email (Optional)
+            </Label>
+            <Input 
+              id="email"
+              type="email"
+              placeholder="john@company.com" 
+              className="input-focus"
+              autoComplete="email"
+              {...form.register('email')}
+            />
+            {form.formState.errors.email && (
+              <p className="text-sm text-destructive">{form.formState.errors.email.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="companyName" className="flex items-center gap-2">
+              <Building className="w-4 h-4 text-muted-foreground" />
+              Company Name *
+            </Label>
+            <Input 
+              id="companyName"
+              placeholder="Acme Corporation" 
+              className="input-focus"
+              autoComplete="organization"
+              {...form.register('companyName')}
+            />
+            {form.formState.errors.companyName && (
+              <p className="text-sm text-destructive">{form.formState.errors.companyName.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="hostName" className="flex items-center gap-2">
+              <UserCheck className="w-4 h-4 text-muted-foreground" />
+              Person to Visit *
+            </Label>
+            <Input 
+              id="hostName"
+              placeholder="Jane Doe" 
+              className="input-focus"
+              {...form.register('hostName')}
+            />
+            {form.formState.errors.hostName && (
+              <p className="text-sm text-destructive">{form.formState.errors.hostName.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="hostEmail" className="flex items-center gap-2">
+              <Mail className="w-4 h-4 text-muted-foreground" />
+              Host Email (Optional)
+            </Label>
+            <Input 
+              id="hostEmail"
+              type="email"
+              placeholder="jane.doe@company.com" 
+              className="input-focus"
+              {...form.register('hostEmail')}
+            />
+            {form.formState.errors.hostEmail && (
+              <p className="text-sm text-destructive">{form.formState.errors.hostEmail.message}</p>
+            )}
+          </div>
+        </div>
+
+        {/* Photo Upload */}
+        <div className="space-y-2">
+          <Label className="flex items-center gap-2">
+            <Camera className="w-4 h-4 text-muted-foreground" />
+            Photo (Optional)
+          </Label>
+          <div className="flex items-start gap-4">
+            {photoPreview ? (
+              <div className="relative shrink-0">
+                <img 
+                  src={photoPreview} 
+                  alt="Visitor preview" 
+                  className="w-20 h-20 rounded-xl object-cover border border-border"
+                />
+                <button
+                  type="button"
+                  onClick={clearPhoto}
+                  className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center shadow-md hover:bg-destructive/90 transition-colors"
+                  aria-label="Remove photo"
                 >
-                  <Camera className="w-6 h-6 text-muted-foreground" />
-                </div>
-              )}
-              <div className="flex-1 space-y-2">
-                {/* Hidden file input for gallery upload */}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handlePhotoChange}
-                  className="hidden"
-                />
-                {/* Camera capture input - uses capture attribute for mobile */}
-                <input
-                  id="camera-capture"
-                  type="file"
-                  accept="image/*"
-                  capture="user"
-                  onChange={handlePhotoChange}
-                  className="hidden"
-                />
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => document.getElementById('camera-capture')?.click()}
-                  >
-                    <Camera className="w-4 h-4 mr-1" />
-                    Take Photo
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    {photoPreview ? 'Change' : 'Upload'}
-                  </Button>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Capture directly or upload from device
-                </p>
+                  <X className="w-3 h-3" />
+                </button>
               </div>
+            ) : (
+              <div 
+                onClick={() => fileInputRef.current?.click()}
+                className="w-20 h-20 shrink-0 rounded-xl border-2 border-dashed border-border hover:border-primary/50 flex items-center justify-center cursor-pointer transition-colors bg-secondary/30"
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => e.key === 'Enter' && fileInputRef.current?.click()}
+                aria-label="Upload photo"
+              >
+                <Camera className="w-6 h-6 text-muted-foreground" />
+              </div>
+            )}
+            <div className="flex-1 space-y-2">
+              {/* Hidden file input for gallery upload */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+                onChange={handlePhotoChange}
+                className="hidden"
+                aria-hidden="true"
+              />
+              {/* Camera capture input - uses capture attribute for mobile */}
+              <input
+                ref={cameraInputRef}
+                id="camera-capture"
+                type="file"
+                accept="image/*"
+                capture="user"
+                onChange={handlePhotoChange}
+                className="hidden"
+                aria-hidden="true"
+              />
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => cameraInputRef.current?.click()}
+                >
+                  <Camera className="w-4 h-4 mr-1" />
+                  Take Photo
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Upload className="w-4 h-4 mr-1" />
+                  {photoPreview ? 'Change' : 'Upload'}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Capture directly or upload from device (max 5MB)
+              </p>
+              {photoError && (
+                <p className="text-sm text-destructive">{photoError}</p>
+              )}
             </div>
           </div>
+        </div>
 
-          <FormField
-            control={form.control}
-            name="purpose"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-muted-foreground" />
-                  Purpose of Visit *
-                </FormLabel>
-                <FormControl>
-                  <Textarea 
-                    placeholder="Describe the purpose of your visit..."
-                    className="input-focus min-h-[100px] resize-none"
-                    {...field} 
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
+        <div className="space-y-2">
+          <Label htmlFor="purpose" className="flex items-center gap-2">
+            <FileText className="w-4 h-4 text-muted-foreground" />
+            Purpose of Visit *
+          </Label>
+          <Textarea 
+            id="purpose"
+            placeholder="Describe the purpose of your visit..."
+            className="input-focus min-h-[100px] resize-none"
+            {...form.register('purpose')}
           />
+          {form.formState.errors.purpose && (
+            <p className="text-sm text-destructive">{form.formState.errors.purpose.message}</p>
+          )}
+        </div>
 
-          <Button 
-            type="submit" 
-            className="w-full btn-primary h-12 text-base font-medium"
-          >
-            Complete Check-in
-            <ArrowRight className="w-5 h-5 ml-2" />
-          </Button>
-        </form>
-      </Form>
+        <Button 
+          type="submit" 
+          className="w-full btn-primary h-12 text-base font-medium"
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? (
+            <>
+              <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+              Processing...
+            </>
+          ) : (
+            <>
+              Complete Check-in
+              <ArrowRight className="w-5 h-5 ml-2" />
+            </>
+          )}
+        </Button>
+      </form>
     </div>
   );
 }

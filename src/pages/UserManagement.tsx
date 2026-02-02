@@ -132,76 +132,94 @@ const UserManagement = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {users.map((user) => (
-              <TableRow key={user.id}>
-                <TableCell>
-                  <div>
-                    <p className="font-medium">{user.display_name || 'Unnamed User'}</p>
-                    <p className="text-sm text-muted-foreground">{user.email}</p>
+            {users.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={4} className="text-center py-12">
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+                      <Users className="w-6 h-6 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-foreground">No users found</p>
+                      <p className="text-sm text-muted-foreground">
+                        Users will appear here once they sign up
+                      </p>
+                    </div>
                   </div>
                 </TableCell>
-                <TableCell>
-                  {user.id === currentUser?.id ? (
-                    <Badge variant={roleConfig[user.role].variant}>
-                      {roleConfig[user.role].label} (You)
-                    </Badge>
-                  ) : (
-                    <Select
-                      value={user.role}
-                      onValueChange={(value) => handleRoleChange(user.id, value as AppRole)}
-                    >
-                      <SelectTrigger className="w-[140px]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="admin">Admin</SelectItem>
-                        <SelectItem value="receptionist">Receptionist</SelectItem>
-                        <SelectItem value="user">User</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  )}
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {format(new Date(user.created_at), 'MMM d, yyyy')}
-                </TableCell>
-                <TableCell>
-                  {user.id !== currentUser?.id && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() => handleRoleChange(user.id, 'admin')}
-                        >
-                          <Shield className="mr-2 h-4 w-4" />
-                          Make Admin
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleRoleChange(user.id, 'receptionist')}
-                        >
-                          <UserCog className="mr-2 h-4 w-4" />
-                          Make Receptionist
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          className="text-destructive"
-                          onClick={() => {
-                            setSelectedUser(user.id);
-                            setShowDeactivateDialog(true);
-                          }}
-                        >
-                          <UserX className="mr-2 h-4 w-4" />
-                          Deactivate User
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )}
-                </TableCell>
               </TableRow>
-            ))}
+            ) : (
+              users.map((user) => (
+                <TableRow key={user.id}>
+                  <TableCell>
+                    <div>
+                      <p className="font-medium">{user.display_name || 'Unnamed User'}</p>
+                      <p className="text-sm text-muted-foreground">{user.email}</p>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {user.id === currentUser?.id ? (
+                      <Badge variant={roleConfig[user.role].variant}>
+                        {roleConfig[user.role].label} (You)
+                      </Badge>
+                    ) : (
+                      <Select
+                        value={user.role}
+                        onValueChange={(value) => handleRoleChange(user.id, value as AppRole)}
+                      >
+                        <SelectTrigger className="w-[140px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="admin">Admin</SelectItem>
+                          <SelectItem value="receptionist">Receptionist</SelectItem>
+                          <SelectItem value="user">User</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {format(new Date(user.created_at), 'MMM d, yyyy')}
+                  </TableCell>
+                  <TableCell>
+                    {user.id !== currentUser?.id && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => handleRoleChange(user.id, 'admin')}
+                          >
+                            <Shield className="mr-2 h-4 w-4" />
+                            Make Admin
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleRoleChange(user.id, 'receptionist')}
+                          >
+                            <UserCog className="mr-2 h-4 w-4" />
+                            Make Receptionist
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className="text-destructive"
+                            onClick={() => {
+                              setSelectedUser(user.id);
+                              setShowDeactivateDialog(true);
+                            }}
+                          >
+                            <UserX className="mr-2 h-4 w-4" />
+                            Deactivate User
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </div>
