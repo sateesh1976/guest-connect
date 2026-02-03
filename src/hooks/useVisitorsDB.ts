@@ -41,29 +41,42 @@ const generateBadgeId = (): string => {
 export function useVisitorsDB() {
   const [visitors, setVisitors] = useState<DBVisitor[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
 
   const fetchVisitors = useCallback(async () => {
-    if (!user) return;
+    if (!user) {
+      setIsLoading(false);
+      return;
+    }
 
     setIsLoading(true);
-    const { data, error } = await supabase
-      .from('visitors')
-      .select('*')
-      .order('check_in_time', { ascending: false });
+    setError(null);
+    
+    try {
+      const { data, error: fetchError } = await supabase
+        .from('visitors')
+        .select('*')
+        .order('check_in_time', { ascending: false });
 
-    if (error) {
-      console.error('Error fetching visitors:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load visitors',
-        variant: 'destructive',
-      });
-    } else {
-      setVisitors(data as DBVisitor[]);
+      if (fetchError) {
+        console.error('Error fetching visitors:', fetchError);
+        setError('Failed to load visitors');
+        toast({
+          title: 'Error',
+          description: 'Failed to load visitors. Please try again.',
+          variant: 'destructive',
+        });
+      } else {
+        setVisitors(data as DBVisitor[]);
+      }
+    } catch (err) {
+      console.error('Unexpected error:', err);
+      setError('An unexpected error occurred');
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }, [user, toast]);
 
   useEffect(() => {
@@ -194,6 +207,7 @@ export function useVisitorsDB() {
   return {
     visitors,
     isLoading,
+    error,
     addVisitor,
     checkOutVisitor,
     getCheckedInCount,

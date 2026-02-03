@@ -41,18 +41,18 @@ export function VisitorDetailsDialog({ visitor, open, onOpenChange }: VisitorDet
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md" aria-describedby="visitor-details-description">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
               {visitor.photoUrl ? (
                 <img 
                   src={visitor.photoUrl} 
-                  alt={visitor.fullName}
+                  alt=""
                   className="w-12 h-12 rounded-full object-cover"
                 />
               ) : (
-              <User className="w-6 h-6 text-primary" />
+              <User className="w-6 h-6 text-primary" aria-hidden="true" />
             )}
             </div>
             <div>
@@ -75,6 +75,9 @@ export function VisitorDetailsDialog({ visitor, open, onOpenChange }: VisitorDet
               </div>
             </div>
           </DialogTitle>
+          <p id="visitor-details-description" className="sr-only">
+            Visitor details for {visitor.fullName} from {visitor.companyName}
+          </p>
         </DialogHeader>
 
         <div className="space-y-4 mt-4">

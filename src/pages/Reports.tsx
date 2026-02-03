@@ -4,16 +4,18 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend
 } from 'recharts';
-import { Users, Building2, TrendingUp, Clock } from 'lucide-react';
+import { BarChart as RechartsBarChart, Users, Building2, TrendingUp, Clock } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
+import { LoadingPage } from '@/components/ui/loading-spinner';
+import { ErrorState } from '@/components/ui/error-state';
 import { useVisitorsDB } from '@/hooks/useVisitorsDB';
 import { StatsCard } from '@/components/dashboard/StatsCard';
 import { DateRangeFilter, DateRange } from '@/components/reports/DateRangeFilter';
 
-const COLORS = ['hsl(var(--primary))', 'hsl(var(--success))', 'hsl(var(--warning))', 'hsl(var(--destructive))', 'hsl(var(--secondary))'];
+const COLORS = ['hsl(var(--primary))', 'hsl(var(--success))', 'hsl(var(--warning))', 'hsl(var(--destructive))', 'hsl(var(--accent))'];
 
 const Reports = () => {
-  const { visitors, isLoading } = useVisitorsDB();
+  const { visitors, isLoading, error, refetch } = useVisitorsDB();
   
   // Default to last 7 days
   const [dateRange, setDateRange] = useState<DateRange>({
@@ -100,9 +102,19 @@ const Reports = () => {
   if (isLoading) {
     return (
       <AppLayout>
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-        </div>
+        <LoadingPage text="Loading reports..." />
+      </AppLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <AppLayout>
+        <ErrorState 
+          title="Failed to load reports" 
+          description={error}
+          onRetry={refetch}
+        />
       </AppLayout>
     );
   }

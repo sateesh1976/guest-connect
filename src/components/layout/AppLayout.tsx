@@ -34,13 +34,13 @@ export function AppLayout({ children }: AppLayoutProps) {
   const { user, userRole, isAdmin, signOut } = useAuth();
 
   const navItems = [
-    { path: '/', label: 'Visitor Check-in', icon: LogIn, requireAuth: false },
-    { path: '/dashboard', label: 'Dashboard', icon: ClipboardList, requireAuth: true },
-    { path: '/pre-registration', label: 'Pre-Register', icon: CalendarPlus, requireAuth: true },
-    { path: '/reports', label: 'Reports', icon: BarChart3, requireAuth: true },
+    { path: '/', label: 'Visitor Check-in', shortLabel: 'Check-in', icon: LogIn, requireAuth: false },
+    { path: '/dashboard', label: 'Dashboard', shortLabel: 'Dashboard', icon: ClipboardList, requireAuth: true },
+    { path: '/pre-registration', label: 'Pre-Register', shortLabel: 'Pre-Reg', icon: CalendarPlus, requireAuth: true },
+    { path: '/reports', label: 'Reports', shortLabel: 'Reports', icon: BarChart3, requireAuth: true },
     ...(isAdmin ? [
-      { path: '/users', label: 'Users', icon: UserCog, requireAuth: true },
-      { path: '/settings', label: 'Settings', icon: Settings, requireAuth: true },
+      { path: '/users', label: 'Users', shortLabel: 'Users', icon: UserCog, requireAuth: true },
+      { path: '/settings', label: 'Settings', shortLabel: 'Settings', icon: Settings, requireAuth: true },
     ] : []),
   ];
 
@@ -133,7 +133,11 @@ export function AppLayout({ children }: AppLayoutProps) {
       </header>
 
       {/* Mobile Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur-md safe-area-pb">
+      <nav 
+        className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur-md safe-area-pb"
+        role="navigation"
+        aria-label="Mobile navigation"
+      >
         <div className="flex items-center justify-around py-2 px-2">
           {navItems.filter(item => !item.requireAuth || user).map((item) => {
             const Icon = item.icon;
@@ -143,13 +147,14 @@ export function AppLayout({ children }: AppLayoutProps) {
                 key={item.path}
                 to={item.path}
                 className={cn(
-                  'flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-colors min-w-0',
+                  'flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-colors min-w-0 focus-ring',
                   isActive ? 'text-primary bg-primary/5' : 'text-muted-foreground'
                 )}
+                aria-current={isActive ? 'page' : undefined}
               >
-                <Icon className="w-5 h-5 flex-shrink-0" />
+                <Icon className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
                 <span className="text-[10px] font-medium truncate max-w-[70px]">
-                  {item.label.split(' ')[0]}
+                  {item.shortLabel || item.label.split(' ')[0]}
                 </span>
               </Link>
             );

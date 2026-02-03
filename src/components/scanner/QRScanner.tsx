@@ -72,7 +72,7 @@ export function QRScanner({ onScan, onError, className }: QRScannerProps) {
   }, []);
 
   return (
-    <div className={cn('flex flex-col items-center', className)}>
+    <div className={cn('flex flex-col items-center', className)} role="region" aria-label="QR code scanner">
       {/* Scanner Container */}
       <div 
         ref={containerRef}
@@ -84,21 +84,22 @@ export function QRScanner({ onScan, onError, className }: QRScannerProps) {
             'w-full h-full',
             !isScanning && 'flex items-center justify-center'
           )}
+          aria-live="polite"
         >
           {!isScanning && (
             <div className="text-center p-6">
               {error ? (
                 <div className="space-y-3">
-                  <CameraOff className="w-12 h-12 text-muted-foreground mx-auto" />
-                  <p className="text-sm text-muted-foreground">{error}</p>
+                  <CameraOff className="w-12 h-12 text-muted-foreground mx-auto" aria-hidden="true" />
+                  <p className="text-sm text-muted-foreground" role="alert">{error}</p>
                   <Button onClick={startScanner} variant="outline" size="sm" className="gap-2">
-                    <RefreshCw className="w-4 h-4" />
+                    <RefreshCw className="w-4 h-4" aria-hidden="true" />
                     Try Again
                   </Button>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <Camera className="w-12 h-12 text-muted-foreground mx-auto" />
+                  <Camera className="w-12 h-12 text-muted-foreground mx-auto" aria-hidden="true" />
                   <p className="text-sm text-muted-foreground">
                     Click start to activate camera
                   </p>
@@ -110,7 +111,7 @@ export function QRScanner({ onScan, onError, className }: QRScannerProps) {
 
         {/* Scanning Overlay */}
         {isScanning && (
-          <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="w-64 h-64 border-2 border-primary rounded-xl relative">
                 <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-primary rounded-tl-lg" />
@@ -127,12 +128,12 @@ export function QRScanner({ onScan, onError, className }: QRScannerProps) {
       <div className="mt-4 flex gap-3">
         {!isScanning ? (
           <Button onClick={startScanner} className="gap-2">
-            <Camera className="w-4 h-4" />
+            <Camera className="w-4 h-4" aria-hidden="true" />
             Start Scanner
           </Button>
         ) : (
           <Button onClick={stopScanner} variant="outline" className="gap-2">
-            <CameraOff className="w-4 h-4" />
+            <CameraOff className="w-4 h-4" aria-hidden="true" />
             Stop Scanner
           </Button>
         )}

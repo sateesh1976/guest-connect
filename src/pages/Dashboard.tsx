@@ -1,4 +1,5 @@
-import { Users, UserCheck, UserMinus, Clock, ScanLine } from 'lucide-react';
+import { useCallback, useMemo } from 'react';
+import { Users, UserCheck, UserMinus, Clock, ScanLine, RefreshCw } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { StatsCard } from '@/components/dashboard/StatsCard';
 import { VisitorTable } from '@/components/dashboard/VisitorTable';
@@ -6,12 +7,23 @@ import { ScannerDialog } from '@/components/scanner/ScannerDialog';
 import { useVisitorsDB, DBVisitor } from '@/hooks/useVisitorsDB';
 import { Visitor } from '@/types/visitor';
 import { Button } from '@/components/ui/button';
+import { LoadingPage } from '@/components/ui/loading-spinner';
+import { ErrorState } from '@/components/ui/error-state';
 
 const Dashboard = () => {
-  const { visitors, isLoading, checkOutVisitor, getCheckedInCount, getTodayVisitorCount, findVisitorByBadgeId } = useVisitorsDB();
+  const { 
+    visitors, 
+    isLoading, 
+    error,
+    checkOutVisitor, 
+    getCheckedInCount, 
+    getTodayVisitorCount, 
+    findVisitorByBadgeId,
+    refetch 
+  } = useVisitorsDB();
 
   // Convert DBVisitor to Visitor type for components
-  const convertToVisitor = (dbVisitor: DBVisitor): Visitor => ({
+  const convertToVisitor = useCallback((dbVisitor: DBVisitor): Visitor => ({
     id: dbVisitor.id,
     badgeId: dbVisitor.badge_id,
     fullName: dbVisitor.full_name,
@@ -24,19 +36,24 @@ const Dashboard = () => {
     checkInTime: dbVisitor.check_in_time,
     checkOutTime: dbVisitor.check_out_time || undefined,
     status: dbVisitor.status,
-  });
+  }), []);
 
-  const visitorsList: Visitor[] = visitors.map(convertToVisitor);
+  const visitorsList = useMemo(() => 
+    visitors.map(convertToVisitor), 
+    [visitors, convertToVisitor]
+  );
 
   // Calculate checked out today
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const checkedOutToday = visitors.filter(
-    v => v.check_out_time && new Date(v.check_out_time) >= today
-  ).length;
+  const checkedOutToday = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return visitors.filter(
+      v => v.check_out_time && new Date(v.check_out_time) >= today
+    ).length;
+  }, [visitors]);
 
   // Calculate average visit duration for completed visits
-  const avgDuration = () => {
+  const avgDuration = useMemo(() => {
     const completedVisits = visitors.filter(v => v.check_out_time);
     if (completedVisits.length === 0) return '—';
     
@@ -49,21 +66,31 @@ const Dashboard = () => {
     const avg = totalMinutes / completedVisits.length;
     if (avg < 60) return `${Math.round(avg)}m`;
     return `${Math.round(avg / 60)}h ${Math.round(avg % 60)}m`;
-  };
+  }, [visitors]);
 
-  const handleScanCheckOut = async (badgeId: string): Promise<boolean> => {
+  const handleScanCheckOut = useCallback(async (badgeId: string): Promise<boolean> => {
     const visitor = findVisitorByBadgeId(badgeId);
     if (!visitor) return false;
     if (visitor.status === 'checked-out') return false;
     return await checkOutVisitor(visitor.id);
-  };
+  }, [findVisitorByBadgeId, checkOutVisitor]);
 
   if (isLoading) {
     return (
       <AppLayout>
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-        </div>
+        <LoadingPage text="Loading dashboard..." />
+      </AppLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <AppLayout>
+        <ErrorState 
+          title="Failed to load visitors" 
+          description={error}
+          onRetry={refetch}
+        />
       </AppLayout>
     );
   }
@@ -76,12 +103,24 @@ const Dashboard = () => {
           <h1 className="text-2xl font-semibold text-foreground mb-1">Dashboard</h1>
           <p className="text-muted-foreground">Manage visitor check-ins and check-outs</p>
         </div>
-        <ScannerDialog onCheckOut={handleScanCheckOut}>
-          <Button className="btn-primary">
-            <ScanLine className="w-4 h-4 mr-2" />
-            Scan QR Code
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={refetch}
+            className="gap-2"
+            aria-label="Refresh visitor data"
+          >
+            <RefreshCw className="w-4 h-4" aria-hidden="true" />
+            <span className="hidden sm:inline">Refresh</span>
           </Button>
-        </ScannerDialog>
+          <ScannerDialog onCheckOut={handleScanCheckOut}>
+            <Button className="btn-primary">
+              <ScanLine className="w-4 h-4 mr-2" aria-hidden="true" />
+              Scan QR Code
+            </Button>
+          </ScannerDialog>
+        </div>
       </div>
 
       {/* Stats Grid */}
@@ -109,7 +148,7 @@ const Dashboard = () => {
         />
         <StatsCard
           title="Avg. Visit Duration"
-          value={avgDuration()}
+          value={avgDuration}
           icon={Clock}
           iconColor="text-secondary-foreground"
           iconBgColor="bg-secondary"

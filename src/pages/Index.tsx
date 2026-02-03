@@ -1,39 +1,29 @@
-import { Users, Clock, Building2 } from 'lucide-react';
+import { useCallback } from 'react';
+import { Users, Clock } from 'lucide-react';
 import { VisitorForm } from '@/components/visitor/VisitorForm';
 import { AppLayout } from '@/components/layout/AppLayout';
-import { useVisitorsDB, VisitorFormData, DBVisitor } from '@/hooks/useVisitorsDB';
+import { useVisitorsDB, VisitorFormData } from '@/hooks/useVisitorsDB';
+import { useKioskMode } from '@/hooks/useKioskMode';
 import { useAuth } from '@/contexts/AuthContext';
 import { Visitor } from '@/types/visitor';
 
 const Index = () => {
   const { addVisitor, getCheckedInCount, getTodayVisitorCount } = useVisitorsDB();
+  const { checkInVisitor: kioskCheckIn } = useKioskMode();
   const { user, isStaff } = useAuth();
 
-  // Convert DBVisitor to Visitor type for the form
-  const handleAddVisitor = async (data: VisitorFormData): Promise<Visitor> => {
+  // Handle visitor check-in - uses kiosk mode for guests, DB for staff
+  const handleAddVisitor = useCallback(async (data: VisitorFormData): Promise<Visitor> => {
+    // Non-authenticated users use kiosk mode (no DB write)
     if (!user || !isStaff) {
-      // For non-authenticated users, return a mock visitor (check-in kiosk mode)
-      const mockVisitor: Visitor = {
-        id: crypto.randomUUID(),
-        badgeId: `V-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
-        fullName: data.fullName,
-        phoneNumber: data.phoneNumber,
-        email: data.email,
-        companyName: data.companyName,
-        hostName: data.hostName,
-        hostEmail: data.hostEmail,
-        purpose: data.purpose,
-        checkInTime: new Date().toISOString(),
-        status: 'checked-in',
-      };
-      return mockVisitor;
+      return kioskCheckIn(data);
     }
 
+    // Staff members write to DB
     const result = await addVisitor(data);
     
     if (result) {
-      // Convert DBVisitor to Visitor
-      const visitor: Visitor = {
+      return {
         id: result.id,
         badgeId: result.badge_id,
         fullName: result.full_name,
@@ -47,24 +37,11 @@ const Index = () => {
         checkOutTime: result.check_out_time || undefined,
         status: result.status,
       };
-      return visitor;
     }
 
-    // Fallback mock visitor if DB insert fails
-    return {
-      id: crypto.randomUUID(),
-      badgeId: `V-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
-      fullName: data.fullName,
-      phoneNumber: data.phoneNumber,
-      email: data.email,
-      companyName: data.companyName,
-      hostName: data.hostName,
-      hostEmail: data.hostEmail,
-      purpose: data.purpose,
-      checkInTime: new Date().toISOString(),
-      status: 'checked-in',
-    };
-  };
+    // Fallback to kiosk mode if DB insert fails
+    return kioskCheckIn(data);
+  }, [user, isStaff, addVisitor, kioskCheckIn]);
 
   return (
     <AppLayout>
