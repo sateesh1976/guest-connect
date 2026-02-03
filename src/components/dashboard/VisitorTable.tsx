@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { format } from 'date-fns';
 import { 
   Search, 
@@ -62,7 +62,7 @@ export function VisitorTable({ visitors, onCheckOut }: VisitorTableProps) {
     });
   }, [visitors, searchQuery, statusFilter]);
 
-  const exportToCSV = () => {
+  const exportToCSV = useCallback(() => {
     const headers = [
       'Name',
       'Phone',
@@ -97,7 +97,8 @@ export function VisitorTable({ visitors, onCheckOut }: VisitorTableProps) {
     link.href = URL.createObjectURL(blob);
     link.download = `visitors_${format(new Date(), 'yyyy-MM-dd')}.csv`;
     link.click();
-  };
+    URL.revokeObjectURL(link.href);
+  }, [filteredVisitors]);
 
   return (
     <div className="card-elevated fade-in">

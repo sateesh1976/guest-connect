@@ -170,6 +170,8 @@ export function VisitorQRCode({ visitor }: VisitorQRCodeProps) {
       <div 
         ref={qrRef}
         className="bg-white p-6 rounded-2xl shadow-elevated-lg border border-border"
+        role="img"
+        aria-label={`QR code for visitor ${visitor.fullName}, badge ID ${visitor.badgeId}`}
       >
         <QRCodeSVG
           value={qrData}
@@ -198,8 +200,9 @@ export function VisitorQRCode({ visitor }: VisitorQRCodeProps) {
           size="sm"
           onClick={handleDownload}
           className="gap-2"
+          aria-label={`Save QR code for ${visitor.fullName}`}
         >
-          <Download className="w-4 h-4" />
+          <Download className="w-4 h-4" aria-hidden="true" />
           Save QR
         </Button>
         <Button
@@ -207,8 +210,9 @@ export function VisitorQRCode({ visitor }: VisitorQRCodeProps) {
           size="sm"
           onClick={handlePrint}
           className="gap-2"
+          aria-label={`Print visitor pass for ${visitor.fullName}`}
         >
-          <Printer className="w-4 h-4" />
+          <Printer className="w-4 h-4" aria-hidden="true" />
           Print Pass
         </Button>
       </div>
