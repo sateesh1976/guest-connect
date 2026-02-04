@@ -145,7 +145,7 @@ export function VisitorTable({ visitors, onCheckOut }: VisitorTableProps) {
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto custom-scrollbar">
         <Table>
           <TableHeader>
             <TableRow className="table-header">
@@ -229,15 +229,16 @@ export function VisitorTable({ visitors, onCheckOut }: VisitorTableProps) {
                           variant="outline"
                           onClick={() => onCheckOut(visitor.id)}
                           className="gap-2"
+                          aria-label={`Check out ${visitor.fullName}`}
                         >
-                          <LogOut className="w-3 h-3" />
-                          Check Out
+                          <LogOut className="w-3 h-3" aria-hidden="true" />
+                          <span className="hidden sm:inline">Check Out</span>
                         </Button>
                       ) : null}
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button size="sm" variant="ghost">
-                            <MoreHorizontal className="w-4 h-4" />
+                          <Button size="sm" variant="ghost" aria-label={`More actions for ${visitor.fullName}`}>
+                            <MoreHorizontal className="w-4 h-4" aria-hidden="true" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">

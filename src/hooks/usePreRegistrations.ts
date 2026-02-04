@@ -56,7 +56,7 @@ export function usePreRegistrations() {
         variant: 'destructive',
       });
     } else {
-      setPreRegistrations((data || []) as unknown as PreRegistration[]);
+      setPreRegistrations((data || []) as PreRegistration[]);
     }
     setIsLoading(false);
   }, [user, toast]);
@@ -110,7 +110,7 @@ export function usePreRegistrations() {
       description: 'Visitor pre-registered successfully',
     });
 
-    const newReg = data as unknown as PreRegistration;
+    const newReg = data as PreRegistration;
     setPreRegistrations(prev => [...prev, newReg]);
     return newReg;
   };

@@ -130,7 +130,9 @@ export function VisitorForm({ onSubmit }: VisitorFormProps) {
       setCreatedVisitor(visitor);
       setIsSubmitted(true);
     } catch (error) {
-      console.error('Check-in failed:', error);
+      // Show user-friendly error message
+      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+      form.setError('root', { message: `Check-in failed: ${errorMessage}` });
     } finally {
       setIsSubmitting(false);
     }
@@ -237,7 +239,13 @@ export function VisitorForm({ onSubmit }: VisitorFormProps) {
         </p>
       </div>
 
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6" noValidate>
+        {/* Form Error Display */}
+        {form.formState.errors.root && (
+          <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+            {form.formState.errors.root.message}
+          </div>
+        )}
         <div className="grid md:grid-cols-2 gap-6">
           <div className="space-y-2">
             <Label htmlFor="fullName" className="flex items-center gap-2">
