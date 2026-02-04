@@ -218,7 +218,7 @@ export default function Auth() {
               </button>
             </div>
           ) : isLogin ? (
-            <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
+            <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4" noValidate>
               <div className="space-y-2">
                 <Label htmlFor="login-email" className="flex items-center gap-2">
                   <Mail className="w-4 h-4 text-muted-foreground" />
@@ -290,6 +290,7 @@ export default function Auth() {
             <form 
               onSubmit={signupForm.handleSubmit(handleSignup)} 
               className="space-y-4"
+              noValidate
             >
               <div className="space-y-2">
                 <Label htmlFor="signup-name" className="flex items-center gap-2">

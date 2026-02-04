@@ -167,21 +167,30 @@ const Reports = () => {
         <div className="card-elevated p-6">
           <h3 className="text-lg font-semibold text-foreground mb-4">Visitor Trend</h3>
           <div className="h-[280px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={dailyData}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                <XAxis dataKey="name" className="text-xs fill-muted-foreground" />
-                <YAxis className="text-xs fill-muted-foreground" />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(var(--card))', 
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px'
-                  }}
-                />
-                <Bar dataKey="visitors" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            {dailyData.some(d => d.visitors > 0) ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={dailyData} role="img" aria-label="Visitor trend bar chart">
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                  <XAxis dataKey="name" className="text-xs fill-muted-foreground" />
+                  <YAxis className="text-xs fill-muted-foreground" allowDecimals={false} />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--card))', 
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px'
+                    }}
+                  />
+                  <Bar dataKey="visitors" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-full text-muted-foreground">
+                <div className="text-center">
+                  <RechartsBarChart className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                  <p>No visitor data for selected period</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -191,7 +200,7 @@ const Reports = () => {
           <div className="h-[280px]">
             {purposeData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
+                <PieChart role="img" aria-label="Visit purpose distribution pie chart">
                   <Pie
                     data={purposeData}
                     cx="50%"
