@@ -48,6 +48,7 @@ export function useVisitorsDB() {
   const fetchVisitors = useCallback(async () => {
     if (!user) {
       setIsLoading(false);
+      setVisitors([]);
       return;
     }
 
@@ -58,11 +59,12 @@ export function useVisitorsDB() {
       const { data, error: fetchError } = await supabase
         .from('visitors')
         .select('*')
-        .order('check_in_time', { ascending: false });
+        .order('check_in_time', { ascending: false })
+        .limit(500); // Reasonable limit for performance
 
       if (fetchError) {
         console.error('Error fetching visitors:', fetchError);
-        setError('Failed to load visitors');
+        setError('Failed to load visitors. Please check your connection and try again.');
         toast({
           title: 'Error',
           description: 'Failed to load visitors. Please try again.',
@@ -73,7 +75,7 @@ export function useVisitorsDB() {
       }
     } catch (err) {
       console.error('Unexpected error:', err);
-      setError('An unexpected error occurred');
+      setError('An unexpected error occurred. Please refresh the page.');
     } finally {
       setIsLoading(false);
     }
@@ -84,125 +86,156 @@ export function useVisitorsDB() {
   }, [fetchVisitors]);
 
   const addVisitor = async (formData: VisitorFormData): Promise<DBVisitor | null> => {
-    if (!user) return null;
-
-    const badgeId = generateBadgeId();
-    
-    const { data, error } = await supabase
-      .from('visitors')
-      .insert({
-        badge_id: badgeId,
-        full_name: formData.fullName,
-        phone_number: formData.phoneNumber,
-        email: formData.email || null,
-        company_name: formData.companyName,
-        host_name: formData.hostName,
-        host_email: formData.hostEmail || null,
-        purpose: formData.purpose,
-        created_by: user.id,
-      })
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error adding visitor:', error);
+    if (!user) {
       toast({
-        title: 'Error',
-        description: 'Failed to check in visitor',
+        title: 'Authentication Required',
+        description: 'Please sign in to check in visitors.',
         variant: 'destructive',
       });
       return null;
     }
 
-    const newVisitor = data as DBVisitor;
-    setVisitors(prev => [newVisitor, ...prev]);
-
-    // Trigger webhook notification
+    const badgeId = generateBadgeId();
+    
     try {
-      await supabase.functions.invoke('send-visitor-notification', {
-        body: { visitor: newVisitor, eventType: 'checkin' }
+      const { data, error } = await supabase
+        .from('visitors')
+        .insert({
+          badge_id: badgeId,
+          full_name: formData.fullName.trim(),
+          phone_number: formData.phoneNumber.trim(),
+          email: formData.email?.trim() || null,
+          company_name: formData.companyName.trim(),
+          host_name: formData.hostName.trim(),
+          host_email: formData.hostEmail?.trim() || null,
+          purpose: formData.purpose.trim(),
+          created_by: user.id,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error adding visitor:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to check in visitor. Please try again.',
+          variant: 'destructive',
+        });
+        return null;
+      }
+
+      const newVisitor = data as DBVisitor;
+      setVisitors(prev => [newVisitor, ...prev]);
+
+      // Trigger notifications in parallel (fire-and-forget)
+      Promise.allSettled([
+        supabase.functions.invoke('send-visitor-notification', {
+          body: { visitor: newVisitor, eventType: 'checkin' }
+        }).catch(err => console.error('Webhook notification failed:', err)),
+        supabase.functions.invoke('send-visitor-email', {
+          body: { visitor: newVisitor, eventType: 'checkin' }
+        }).catch(err => console.error('Email notification failed:', err)),
+      ]);
+
+      toast({
+        title: 'Success',
+        description: `${formData.fullName} has been checked in`,
       });
-    } catch (webhookError) {
-      console.error('Webhook notification failed:', webhookError);
-    }
 
-    // Trigger email notification
-    try {
-      await supabase.functions.invoke('send-visitor-email', {
-        body: { visitor: newVisitor, eventType: 'checkin' }
+      return newVisitor;
+    } catch (err) {
+      console.error('Unexpected error adding visitor:', err);
+      toast({
+        title: 'Error',
+        description: 'An unexpected error occurred. Please try again.',
+        variant: 'destructive',
       });
-    } catch (emailError) {
-      console.error('Email notification failed:', emailError);
+      return null;
     }
-
-    toast({
-      title: 'Success',
-      description: `${formData.fullName} has been checked in`,
-    });
-
-    return newVisitor;
   };
 
   const checkOutVisitor = async (id: string): Promise<boolean> => {
     const visitor = visitors.find(v => v.id === id);
-    if (!visitor) return false;
-
-    const { error } = await supabase
-      .from('visitors')
-      .update({
-        status: 'checked-out',
-        check_out_time: new Date().toISOString(),
-      })
-      .eq('id', id);
-
-    if (error) {
-      console.error('Error checking out visitor:', error);
+    if (!visitor) {
       toast({
         title: 'Error',
-        description: 'Failed to check out visitor',
+        description: 'Visitor not found.',
         variant: 'destructive',
       });
       return false;
     }
 
-    setVisitors(prev =>
-      prev.map(v =>
-        v.id === id
-          ? { ...v, status: 'checked-out' as const, check_out_time: new Date().toISOString() }
-          : v
-      )
-    );
-
-    // Trigger webhook notification for checkout
-    try {
-      await supabase.functions.invoke('send-visitor-notification', {
-        body: { visitor: { ...visitor, status: 'checked-out' }, eventType: 'checkout' }
+    if (visitor.status === 'checked-out') {
+      toast({
+        title: 'Already Checked Out',
+        description: `${visitor.full_name} has already been checked out.`,
       });
-    } catch (webhookError) {
-      console.error('Webhook notification failed:', webhookError);
+      return false;
     }
 
-    toast({
-      title: 'Checked Out',
-      description: `${visitor.full_name} has been checked out`,
-    });
+    try {
+      const checkOutTime = new Date().toISOString();
+      const { error } = await supabase
+        .from('visitors')
+        .update({
+          status: 'checked-out',
+          check_out_time: checkOutTime,
+        })
+        .eq('id', id);
 
-    return true;
+      if (error) {
+        console.error('Error checking out visitor:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to check out visitor. Please try again.',
+          variant: 'destructive',
+        });
+        return false;
+      }
+
+      setVisitors(prev =>
+        prev.map(v =>
+          v.id === id
+            ? { ...v, status: 'checked-out' as const, check_out_time: checkOutTime }
+            : v
+        )
+      );
+
+      // Trigger webhook notification for checkout (fire-and-forget)
+      supabase.functions.invoke('send-visitor-notification', {
+        body: { visitor: { ...visitor, status: 'checked-out', check_out_time: checkOutTime }, eventType: 'checkout' }
+      }).catch(err => console.error('Webhook notification failed:', err));
+
+      toast({
+        title: 'Checked Out',
+        description: `${visitor.full_name} has been checked out`,
+      });
+
+      return true;
+    } catch (err) {
+      console.error('Unexpected error checking out visitor:', err);
+      toast({
+        title: 'Error',
+        description: 'An unexpected error occurred. Please try again.',
+        variant: 'destructive',
+      });
+      return false;
+    }
   };
 
-  const getCheckedInCount = (): number => {
+  const getCheckedInCount = useCallback((): number => {
     return visitors.filter(v => v.status === 'checked-in').length;
-  };
+  }, [visitors]);
 
-  const getTodayVisitorCount = (): number => {
+  const getTodayVisitorCount = useCallback((): number => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     return visitors.filter(v => new Date(v.check_in_time) >= today).length;
-  };
+  }, [visitors]);
 
-  const findVisitorByBadgeId = (badgeId: string): DBVisitor | undefined => {
-    return visitors.find(v => v.badge_id === badgeId);
-  };
+  const findVisitorByBadgeId = useCallback((badgeId: string): DBVisitor | undefined => {
+    return visitors.find(v => v.badge_id === badgeId && v.status === 'checked-in');
+  }, [visitors]);
 
   return {
     visitors,

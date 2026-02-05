@@ -133,6 +133,8 @@ export function DateRangeFilter({ dateRange, onDateRangeChange }: DateRangeFilte
               }
             }}
             numberOfMonths={2}
+            disabled={{ after: new Date() }}
+            className="pointer-events-auto"
           />
         </PopoverContent>
       </Popover>
