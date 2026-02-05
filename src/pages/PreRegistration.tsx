@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useCallback, useMemo } from 'react';
 import { format, isToday, isTomorrow, isPast, parseISO } from 'date-fns';
-import { Plus, Calendar, Clock, Building2, User, XCircle, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { Plus, Calendar, Clock, Building2, User, XCircle, CheckCircle2, AlertCircle, Loader2, RefreshCw } from 'lucide-react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -54,7 +55,7 @@ const statusConfig = {
 };
 
 const PreRegistration = () => {
-  const { preRegistrations, isLoading, addPreRegistration, cancelPreRegistration } = usePreRegistrations();
+  const { preRegistrations, isLoading, addPreRegistration, cancelPreRegistration, refetch } = usePreRegistrations();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [filter, setFilter] = useState<'all' | 'pending' | 'today'>('pending');
@@ -98,18 +99,22 @@ const PreRegistration = () => {
     }
   };
 
-  const filteredRegistrations = preRegistrations.filter(pr => {
+  const filteredRegistrations = useMemo(() => preRegistrations.filter(pr => {
     if (filter === 'pending') return pr.status === 'pending';
     if (filter === 'today') return pr.expected_date === new Date().toISOString().split('T')[0];
     return true;
-  });
+  }), [preRegistrations, filter]);
 
-  const getDateLabel = (dateStr: string) => {
+  const getDateLabel = useCallback((dateStr: string) => {
     const date = parseISO(dateStr);
     if (isToday(date)) return 'Today';
     if (isTomorrow(date)) return 'Tomorrow';
     return format(date, 'EEE, MMM d');
-  };
+  }, []);
+
+  const todayCount = useMemo(() => preRegistrations.filter(
+    pr => pr.expected_date === new Date().toISOString().split('T')[0] && pr.status === 'pending'
+  ).length, [preRegistrations]);
 
   if (isLoading) {
     return (
@@ -121,10 +126,6 @@ const PreRegistration = () => {
       </AppLayout>
     );
   }
-
-  const todayCount = preRegistrations.filter(
-    pr => pr.expected_date === new Date().toISOString().split('T')[0] && pr.status === 'pending'
-  ).length;
 
   return (
     <AppLayout>
@@ -264,6 +265,21 @@ const PreRegistration = () => {
             </form>
           </DialogContent>
         </Dialog>
+      </div>
+
+
+      {/* Refresh Button */}
+      <div className="flex justify-end mb-4">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => refetch()}
+          disabled={isLoading}
+          className="gap-2"
+        >
+          <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
       </div>
 
       {/* Stats & Filter */}

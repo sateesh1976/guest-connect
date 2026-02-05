@@ -70,6 +70,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           </Link>
 
           <nav className="hidden md:flex items-center gap-1">
+            <span role="navigation" aria-label="Main navigation" className="contents">
             {navItems.map((item) => {
               if (item.requireAuth && !user) return null;
               const Icon = item.icon;
@@ -82,12 +83,14 @@ export function AppLayout({ children }: AppLayoutProps) {
                     'nav-link',
                     isActive && 'nav-link-active'
                   )}
+                  aria-current={isActive ? 'page' : undefined}
                 >
-                  <Icon className="w-4 h-4" />
+                  <Icon className="w-4 h-4" aria-hidden="true" />
                   <span className="text-sm font-medium">{item.label}</span>
                 </Link>
               );
             })}
+            </span>
           </nav>
 
           <div className="flex items-center gap-3">

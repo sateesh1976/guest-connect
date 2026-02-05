@@ -4,18 +4,21 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend
 } from 'recharts';
-import { BarChart as RechartsBarChart, Users, Building2, TrendingUp, Clock } from 'lucide-react';
+import { BarChart as RechartsBarChart, Users, Building2, TrendingUp, Clock, Download } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { LoadingPage } from '@/components/ui/loading-spinner';
 import { ErrorState } from '@/components/ui/error-state';
 import { useVisitorsDB } from '@/hooks/useVisitorsDB';
 import { StatsCard } from '@/components/dashboard/StatsCard';
 import { DateRangeFilter, DateRange } from '@/components/reports/DateRangeFilter';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--success))', 'hsl(var(--warning))', 'hsl(var(--destructive))', 'hsl(var(--accent))'];
 
 const Reports = () => {
   const { visitors, isLoading, error, refetch } = useVisitorsDB();
+  const { toast } = useToast();
   
   // Default to last 7 days
   const [dateRange, setDateRange] = useState<DateRange>({
@@ -99,6 +102,62 @@ const Reports = () => {
   const uniqueCompanies = new Set(filteredVisitors.map(v => v.company_name)).size;
   const dailyAverage = Math.round(totalVisitors / Math.max(daysInRange, 1));
 
+  // Export filtered visitors to CSV
+  const exportToCSV = () => {
+    if (filteredVisitors.length === 0) {
+      toast({
+        title: 'No Data',
+        description: 'There are no visitors to export for the selected period.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const headers = [
+      'Name',
+      'Phone',
+      'Email',
+      'Company',
+      'Host',
+      'Purpose',
+      'Check-in Time',
+      'Check-out Time',
+      'Status'
+    ];
+
+    const rows = filteredVisitors.map(v => [
+      v.full_name,
+      v.phone_number,
+      v.email || '',
+      v.company_name,
+      v.host_name,
+      v.purpose,
+      format(new Date(v.check_in_time), 'yyyy-MM-dd HH:mm'),
+      v.check_out_time ? format(new Date(v.check_out_time), 'yyyy-MM-dd HH:mm') : '',
+      v.status
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.href = url;
+    link.download = `visitors_${format(dateRange.from, 'yyyy-MM-dd')}_to_${format(dateRange.to, 'yyyy-MM-dd')}.csv`;
+    link.click();
+    
+    // Clean up blob URL to prevent memory leak
+    setTimeout(() => URL.revokeObjectURL(url), 100);
+    
+    toast({
+      title: 'Export Complete',
+      description: `Exported ${filteredVisitors.length} visitors to CSV.`,
+    });
+  };
+
   if (isLoading) {
     return (
       <AppLayout>
@@ -121,12 +180,23 @@ const Reports = () => {
 
   return (
     <AppLayout>
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-8">
+      <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-8">
         <div>
           <h1 className="text-2xl font-semibold text-foreground mb-1">Reports</h1>
           <p className="text-muted-foreground">Analytics and insights on visitor activity</p>
         </div>
-        <DateRangeFilter dateRange={dateRange} onDateRangeChange={setDateRange} />
+        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+          <DateRangeFilter dateRange={dateRange} onDateRangeChange={setDateRange} />
+          <Button 
+            variant="outline" 
+            onClick={exportToCSV}
+            className="gap-2"
+            disabled={filteredVisitors.length === 0}
+          >
+            <Download className="w-4 h-4" />
+            Export CSV
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}

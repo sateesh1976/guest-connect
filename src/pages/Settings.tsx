@@ -10,7 +10,8 @@ import {
   CheckCircle2,
   XCircle,
   Slack,
-  MessageSquare
+  MessageSquare,
+  Loader2
 } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { AuditLogViewer } from '@/components/settings/AuditLogViewer';
@@ -68,6 +69,7 @@ export default function Settings() {
   const { isAdmin } = useAuth();
   const { webhooks, isLoading, addWebhook, updateWebhook, deleteWebhook } = useWebhookSettings();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<WebhookFormData>({
     resolver: zodResolver(webhookSchema),
@@ -82,10 +84,15 @@ export default function Settings() {
   });
 
   const handleSubmit = async (data: WebhookFormData) => {
-    const result = await addWebhook(data);
-    if (result) {
-      form.reset();
-      setIsAddDialogOpen(false);
+    setIsSubmitting(true);
+    try {
+      const result = await addWebhook(data);
+      if (result) {
+        form.reset();
+        setIsAddDialogOpen(false);
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -265,8 +272,15 @@ export default function Settings() {
                     />
                   </div>
 
-                  <Button type="submit" className="w-full btn-primary">
-                    Add Webhook
+                  <Button type="submit" className="w-full btn-primary" disabled={isSubmitting}>
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Adding...
+                      </>
+                    ) : (
+                      'Add Webhook'
+                    )}
                   </Button>
                 </form>
               </Form>

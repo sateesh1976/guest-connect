@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { Users, Clock } from 'lucide-react';
 import { VisitorForm } from '@/components/visitor/VisitorForm';
 import { AppLayout } from '@/components/layout/AppLayout';
@@ -6,11 +6,16 @@ import { useVisitorsDB, VisitorFormData } from '@/hooks/useVisitorsDB';
 import { useKioskMode } from '@/hooks/useKioskMode';
 import { useAuth } from '@/contexts/AuthContext';
 import { Visitor } from '@/types/visitor';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const Index = () => {
-  const { addVisitor, getCheckedInCount, getTodayVisitorCount } = useVisitorsDB();
+  const { addVisitor, getCheckedInCount, getTodayVisitorCount, isLoading } = useVisitorsDB();
   const { checkInVisitor: kioskCheckIn } = useKioskMode();
   const { user, isStaff } = useAuth();
+
+  // Memoize counts to prevent unnecessary recalculations
+  const checkedInCount = useMemo(() => getCheckedInCount(), [getCheckedInCount]);
+  const todayCount = useMemo(() => getTodayVisitorCount(), [getTodayVisitorCount]);
 
   // Handle visitor check-in - uses kiosk mode for guests, DB for staff
   const handleAddVisitor = useCallback(async (data: VisitorFormData): Promise<Visitor> => {
@@ -64,7 +69,11 @@ const Index = () => {
                 <Users className="w-6 h-6 text-success" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">{getCheckedInCount()}</p>
+            {isLoading ? (
+              <Skeleton className="h-8 w-12 mb-1" />
+            ) : (
+              <p className="text-2xl font-bold text-foreground">{checkedInCount}</p>
+            )}
                 <p className="text-sm text-muted-foreground">Current Visitors</p>
               </div>
             </div>
@@ -73,7 +82,11 @@ const Index = () => {
                 <Clock className="w-6 h-6 text-primary" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">{getTodayVisitorCount()}</p>
+            {isLoading ? (
+              <Skeleton className="h-8 w-12 mb-1" />
+            ) : (
+              <p className="text-2xl font-bold text-foreground">{todayCount}</p>
+            )}
                 <p className="text-sm text-muted-foreground">Today's Visitors</p>
               </div>
             </div>
