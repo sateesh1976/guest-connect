@@ -39,59 +39,103 @@ export function useWebhookSettings() {
     }
 
     setIsLoading(true);
-    const { data, error } = await supabase
-      .from('webhook_settings')
-      .select('*')
-      .order('created_at', { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from('webhook_settings')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('Error fetching webhooks:', error);
-    } else {
-      setWebhooks(data as WebhookSetting[]);
+      if (error) {
+        console.error('Error fetching webhooks:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load webhook settings.',
+          variant: 'destructive',
+        });
+        setWebhooks([]);
+      } else {
+        setWebhooks(data as WebhookSetting[]);
+      }
+    } catch (err) {
+      console.error('Unexpected error fetching webhooks:', err);
+      setWebhooks([]);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
-  }, [user, isAdmin]);
+  }, [user, isAdmin, toast]);
 
   useEffect(() => {
     fetchWebhooks();
   }, [fetchWebhooks]);
 
   const addWebhook = async (formData: WebhookFormData): Promise<WebhookSetting | null> => {
-    if (!user || !isAdmin) return null;
-
-    const { data, error } = await supabase
-      .from('webhook_settings')
-      .insert({
-        name: formData.name,
-        webhook_url: formData.webhookUrl,
-        webhook_type: formData.webhookType,
-        is_active: formData.isActive,
-        notify_on_checkin: formData.notifyOnCheckin,
-        notify_on_checkout: formData.notifyOnCheckout,
-        created_by: user.id,
-      })
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error adding webhook:', error);
+    if (!user || !isAdmin) {
       toast({
-        title: 'Error',
-        description: 'Failed to add webhook',
+        title: 'Permission Denied',
+        description: 'Only admins can add webhooks.',
         variant: 'destructive',
       });
       return null;
     }
 
-    const newWebhook = data as WebhookSetting;
-    setWebhooks(prev => [newWebhook, ...prev]);
+    // Validate webhook URL format
+    try {
+      const url = new URL(formData.webhookUrl);
+      if (!['http:', 'https:'].includes(url.protocol)) {
+        throw new Error('Invalid protocol');
+      }
+    } catch {
+      toast({
+        title: 'Invalid URL',
+        description: 'Please enter a valid HTTP or HTTPS URL.',
+        variant: 'destructive',
+      });
+      return null;
+    }
 
-    toast({
-      title: 'Webhook Added',
-      description: `${formData.name} has been configured`,
-    });
+    try {
+      const { data, error } = await supabase
+        .from('webhook_settings')
+        .insert({
+          name: formData.name.trim(),
+          webhook_url: formData.webhookUrl.trim(),
+          webhook_type: formData.webhookType,
+          is_active: formData.isActive,
+          notify_on_checkin: formData.notifyOnCheckin,
+          notify_on_checkout: formData.notifyOnCheckout,
+          created_by: user.id,
+        })
+        .select()
+        .single();
 
-    return newWebhook;
+      if (error) {
+        console.error('Error adding webhook:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to add webhook. Please try again.',
+          variant: 'destructive',
+        });
+        return null;
+      }
+
+      const newWebhook = data as WebhookSetting;
+      setWebhooks(prev => [newWebhook, ...prev]);
+
+      toast({
+        title: 'Webhook Added',
+        description: `${formData.name} has been configured`,
+      });
+
+      return newWebhook;
+    } catch (err) {
+      console.error('Unexpected error adding webhook:', err);
+      toast({
+        title: 'Error',
+        description: 'An unexpected error occurred.',
+        variant: 'destructive',
+      });
+      return null;
+    }
   };
 
   const updateWebhook = async (id: string, formData: Partial<WebhookFormData>): Promise<boolean> => {

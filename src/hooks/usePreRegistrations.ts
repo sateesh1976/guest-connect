@@ -39,26 +39,43 @@ export function usePreRegistrations() {
   const { user } = useAuth();
 
   const fetchPreRegistrations = useCallback(async () => {
-    if (!user) return;
+    if (!user) {
+      setPreRegistrations([]);
+      setIsLoading(false);
+      return;
+    }
 
     setIsLoading(true);
-    const { data, error } = await supabase
-      .from('pre_registrations')
-      .select('*')
-      .order('expected_date', { ascending: true })
-      .order('expected_time', { ascending: true });
+    try {
+      const { data, error } = await supabase
+        .from('pre_registrations')
+        .select('*')
+        .order('expected_date', { ascending: true })
+        .order('expected_time', { ascending: true })
+        .limit(500);
 
-    if (error) {
-      console.error('Error fetching pre-registrations:', error);
+      if (error) {
+        console.error('Error fetching pre-registrations:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load pre-registrations. Please try again.',
+          variant: 'destructive',
+        });
+        setPreRegistrations([]);
+      } else {
+        setPreRegistrations((data || []) as PreRegistration[]);
+      }
+    } catch (err) {
+      console.error('Unexpected error fetching pre-registrations:', err);
       toast({
         title: 'Error',
-        description: 'Failed to load pre-registrations',
+        description: 'An unexpected error occurred.',
         variant: 'destructive',
       });
-    } else {
-      setPreRegistrations((data || []) as PreRegistration[]);
+      setPreRegistrations([]);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }, [user, toast]);
 
   useEffect(() => {
@@ -66,53 +83,86 @@ export function usePreRegistrations() {
   }, [fetchPreRegistrations]);
 
   const addPreRegistration = async (formData: PreRegistrationFormData): Promise<PreRegistration | null> => {
-    if (!user) return null;
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('display_name, email')
-      .eq('id', user.id)
-      .single();
-
-    const newPreReg = {
-      visitor_name: formData.visitor_name,
-      visitor_email: formData.visitor_email || null,
-      visitor_phone: formData.visitor_phone || null,
-      visitor_company: formData.visitor_company || null,
-      host_user_id: user.id,
-      host_name: profile?.display_name || user.email?.split('@')[0] || 'Unknown Host',
-      host_email: profile?.email || user.email || null,
-      expected_date: formData.expected_date,
-      expected_time: formData.expected_time || null,
-      purpose: formData.purpose || null,
-      notes: formData.notes || null,
-      status: 'pending' as const,
-    };
-
-    const { data, error } = await supabase
-      .from('pre_registrations')
-      .insert(newPreReg)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error adding pre-registration:', error);
+    if (!user) {
       toast({
-        title: 'Error',
-        description: 'Failed to create pre-registration',
+        title: 'Authentication Required',
+        description: 'Please sign in to create pre-registrations.',
         variant: 'destructive',
       });
       return null;
     }
 
-    toast({
-      title: 'Success',
-      description: 'Visitor pre-registered successfully',
-    });
+    // Validate expected date is not in the past
+    const expectedDate = new Date(formData.expected_date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    if (expectedDate < today) {
+      toast({
+        title: 'Invalid Date',
+        description: 'Expected visit date cannot be in the past.',
+        variant: 'destructive',
+      });
+      return null;
+    }
 
-    const newReg = data as PreRegistration;
-    setPreRegistrations(prev => [...prev, newReg]);
-    return newReg;
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('display_name, email')
+        .eq('id', user.id)
+        .single();
+
+      const newPreReg = {
+        visitor_name: formData.visitor_name.trim(),
+        visitor_email: formData.visitor_email?.trim() || null,
+        visitor_phone: formData.visitor_phone?.trim() || null,
+        visitor_company: formData.visitor_company?.trim() || null,
+        host_user_id: user.id,
+        host_name: profile?.display_name || user.email?.split('@')[0] || 'Unknown Host',
+        host_email: profile?.email || user.email || null,
+        expected_date: formData.expected_date,
+        expected_time: formData.expected_time || null,
+        purpose: formData.purpose?.trim() || null,
+        notes: formData.notes?.trim() || null,
+        status: 'pending' as const,
+      };
+
+      const { data, error } = await supabase
+        .from('pre_registrations')
+        .insert(newPreReg)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error adding pre-registration:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to create pre-registration. Please try again.',
+          variant: 'destructive',
+        });
+        return null;
+      }
+
+      toast({
+        title: 'Success',
+        description: 'Visitor pre-registered successfully',
+      });
+
+      const newReg = data as PreRegistration;
+      setPreRegistrations(prev => [...prev, newReg].sort((a, b) => 
+        new Date(a.expected_date).getTime() - new Date(b.expected_date).getTime()
+      ));
+      return newReg;
+    } catch (err) {
+      console.error('Unexpected error adding pre-registration:', err);
+      toast({
+        title: 'Error',
+        description: 'An unexpected error occurred. Please try again.',
+        variant: 'destructive',
+      });
+      return null;
+    }
   };
 
   const updatePreRegistrationStatus = async (id: string, status: PreRegistration['status']): Promise<boolean> => {

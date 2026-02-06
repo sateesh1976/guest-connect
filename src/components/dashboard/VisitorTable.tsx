@@ -30,10 +30,12 @@ import { Badge } from '@/components/ui/badge';
 import { Visitor } from '@/types/visitor';
 import { cn } from '@/lib/utils';
 import { VisitorDetailsDialog } from './VisitorDetailsDialog';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { useToast } from '@/hooks/use-toast';
 
 interface VisitorTableProps {
   visitors: Visitor[];
-  onCheckOut: (id: string) => void;
+  onCheckOut: (id: string) => Promise<boolean> | boolean;
 }
 
 type FilterStatus = 'all' | 'checked-in' | 'checked-out';
@@ -43,11 +45,36 @@ export function VisitorTable({ visitors, onCheckOut }: VisitorTableProps) {
   const [statusFilter, setStatusFilter] = useState<FilterStatus>('all');
   const [selectedVisitor, setSelectedVisitor] = useState<Visitor | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [checkingOut, setCheckingOut] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const handleViewDetails = (visitor: Visitor) => {
     setSelectedVisitor(visitor);
     setDetailsOpen(true);
   };
+
+  const handleCheckOut = useCallback(async (visitor: Visitor) => {
+    setCheckingOut(visitor.id);
+    try {
+      const result = await onCheckOut(visitor.id);
+      if (!result) {
+        toast({
+          title: 'Check-out Failed',
+          description: `Could not check out ${visitor.fullName}. Please try again.`,
+          variant: 'destructive',
+        });
+      }
+    } catch (err) {
+      console.error('Check-out error:', err);
+      toast({
+        title: 'Error',
+        description: 'An unexpected error occurred during check-out.',
+        variant: 'destructive',
+      });
+    } finally {
+      setCheckingOut(null);
+    }
+  }, [onCheckOut, toast]);
   const filteredVisitors = useMemo(() => {
     return visitors.filter((visitor) => {
       const matchesSearch = 
@@ -223,18 +250,28 @@ export function VisitorTable({ visitors, onCheckOut }: VisitorTableProps) {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      {visitor.status === 'checked-in' ? (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => onCheckOut(visitor.id)}
-                          className="gap-2"
-                          aria-label={`Check out ${visitor.fullName}`}
-                        >
-                          <LogOut className="w-3 h-3" aria-hidden="true" />
-                          <span className="hidden sm:inline">Check Out</span>
-                        </Button>
-                      ) : null}
+                      {visitor.status === 'checked-in' && (
+                        <ConfirmDialog
+                          trigger={
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="gap-2"
+                              disabled={checkingOut === visitor.id}
+                              aria-label={`Check out ${visitor.fullName}`}
+                            >
+                              <LogOut className="w-3 h-3" aria-hidden="true" />
+                              <span className="hidden sm:inline">
+                                {checkingOut === visitor.id ? 'Checking out...' : 'Check Out'}
+                              </span>
+                            </Button>
+                          }
+                          title="Confirm Check-out"
+                          description={`Are you sure you want to check out ${visitor.fullName} from ${visitor.companyName}?`}
+                          confirmText="Check Out"
+                          onConfirm={() => handleCheckOut(visitor)}
+                        />
+                      )}
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button size="sm" variant="ghost" aria-label={`More actions for ${visitor.fullName}`}>

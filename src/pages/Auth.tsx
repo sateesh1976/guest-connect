@@ -20,8 +20,13 @@ const loginSchema = z.object({
 const signupSchema = z.object({
   displayName: z.string().trim().min(2, 'Name must be at least 2 characters').max(100),
   email: z.string().trim().email('Please enter a valid email').max(255),
-  password: z.string().min(6, 'Password must be at least 6 characters').max(72),
-  confirmPassword: z.string().min(6, 'Please confirm your password').max(72),
+  password: z.string()
+    .min(8, 'Password must be at least 8 characters')
+    .max(72)
+    .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+    .regex(/[0-9]/, 'Password must contain at least one number'),
+  confirmPassword: z.string().min(8, 'Please confirm your password').max(72),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],

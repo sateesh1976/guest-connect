@@ -33,6 +33,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 const formSchema = z.object({
   visitor_name: z.string().trim().min(2, 'Name must be at least 2 characters').max(100),
@@ -381,15 +382,23 @@ const PreRegistration = () => {
                       )}
                     </div>
                     {pr.status === 'pending' && !isExpired && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-destructive hover:text-destructive shrink-0"
-                        onClick={() => cancelPreRegistration(pr.id)}
-                      >
-                        <XCircle className="h-4 w-4 mr-1" />
-                        Cancel
-                      </Button>
+                      <ConfirmDialog
+                        trigger={
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:text-destructive shrink-0"
+                          >
+                            <XCircle className="h-4 w-4 mr-1" />
+                            Cancel
+                          </Button>
+                        }
+                        title="Cancel Pre-Registration"
+                        description={`Are you sure you want to cancel the pre-registration for ${pr.visitor_name}? This action cannot be undone.`}
+                        confirmText="Cancel Registration"
+                        variant="destructive"
+                        onConfirm={() => cancelPreRegistration(pr.id)}
+                      />
                     )}
                   </div>
                   {pr.notes && (
