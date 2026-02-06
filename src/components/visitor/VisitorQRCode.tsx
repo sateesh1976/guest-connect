@@ -9,6 +9,16 @@ interface VisitorQRCodeProps {
   visitor: Visitor;
 }
 
+// HTML escape function to prevent XSS attacks
+function escapeHtml(unsafe: string): string {
+  return unsafe
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 export function VisitorQRCode({ visitor }: VisitorQRCodeProps) {
   const qrRef = useRef<HTMLDivElement>(null);
 
@@ -102,18 +112,18 @@ export function VisitorQRCode({ visitor }: VisitorQRCodeProps) {
         <body>
           <div class="pass">
             <div class="header">Visitor Pass</div>
-            <h1 class="title">${visitor.fullName}</h1>
+            <h1 class="title">${escapeHtml(visitor.fullName)}</h1>
             <div class="qr-container">
               ${printContent.querySelector('svg')?.outerHTML || ''}
             </div>
             <div class="info">
               <div class="info-row">
                 <div class="info-label">Company</div>
-                <div class="info-value">${visitor.companyName}</div>
+                <div class="info-value">${escapeHtml(visitor.companyName)}</div>
               </div>
               <div class="info-row">
                 <div class="info-label">Visiting</div>
-                <div class="info-value">${visitor.hostName}</div>
+                <div class="info-value">${escapeHtml(visitor.hostName)}</div>
               </div>
               <div class="info-row">
                 <div class="info-label">Check-in Time</div>
@@ -121,9 +131,9 @@ export function VisitorQRCode({ visitor }: VisitorQRCodeProps) {
               </div>
             </div>
             <div class="footer">
-123:               Please wear this badge visibly at all times.<br/>
-124:               Badge ID: ${visitor.badgeId}
-125:             </div>
+              Please wear this badge visibly at all times.<br/>
+              Badge ID: ${escapeHtml(visitor.badgeId)}
+            </div>
           </div>
         </body>
       </html>
