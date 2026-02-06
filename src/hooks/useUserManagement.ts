@@ -75,101 +75,154 @@ export function useUserManagement() {
   }, [fetchUsers]);
 
   const updateUserRole = async (userId: string, newRole: AppRole): Promise<boolean> => {
-    if (!isAdmin || userId === currentUser?.id) {
+    // Validate inputs
+    if (!userId || !newRole) {
       toast({
         title: 'Error',
-        description: userId === currentUser?.id 
-          ? 'You cannot change your own role'
-          : 'Only admins can change roles',
+        description: 'Invalid user ID or role specified.',
         variant: 'destructive',
       });
       return false;
     }
 
-    // Use delete + insert pattern to comply with RLS policy that blocks direct updates
-    // This creates a proper audit trail with two separate events
-    
-    // Delete existing role first
-    const { error: deleteError } = await supabase
-      .from('user_roles')
-      .delete()
-      .eq('user_id', userId);
-
-    if (deleteError) {
-      console.error('Error deleting role:', deleteError);
+    if (!isAdmin) {
       toast({
-        title: 'Error',
-        description: 'Failed to update user role',
+        title: 'Permission Denied',
+        description: 'Only admins can change user roles.',
         variant: 'destructive',
       });
       return false;
     }
 
-    // Insert new role
-    const { error: insertError } = await supabase
-      .from('user_roles')
-      .insert({ user_id: userId, role: newRole });
-
-    if (insertError) {
-      console.error('Error inserting role:', insertError);
+    if (userId === currentUser?.id) {
       toast({
-        title: 'Error',
-        description: 'Failed to update user role',
+        title: 'Action Not Allowed',
+        description: 'You cannot change your own role.',
         variant: 'destructive',
       });
       return false;
     }
 
-    setUsers(prev =>
-      prev.map(u => (u.id === userId ? { ...u, role: newRole } : u))
-    );
+    try {
+      // Use delete + insert pattern to comply with RLS policy that blocks direct updates
+      // This creates a proper audit trail with two separate events
+      
+      // Delete existing role first
+      const { error: deleteError } = await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', userId);
 
-    toast({
-      title: 'Success',
-      description: 'User role updated successfully',
-    });
+      if (deleteError) {
+        console.error('Error deleting role:', deleteError);
+        toast({
+          title: 'Error',
+          description: 'Failed to update user role. Please try again.',
+          variant: 'destructive',
+        });
+        return false;
+      }
 
-    return true;
+      // Insert new role
+      const { error: insertError } = await supabase
+        .from('user_roles')
+        .insert({ user_id: userId, role: newRole });
+
+      if (insertError) {
+        console.error('Error inserting role:', insertError);
+        toast({
+          title: 'Error',
+          description: 'Failed to assign new role. Please try again.',
+          variant: 'destructive',
+        });
+        return false;
+      }
+
+      setUsers(prev =>
+        prev.map(u => (u.id === userId ? { ...u, role: newRole } : u))
+      );
+
+      toast({
+        title: 'Role Updated',
+        description: 'User role has been updated successfully.',
+      });
+
+      return true;
+    } catch (err) {
+      console.error('Unexpected error updating role:', err);
+      toast({
+        title: 'Error',
+        description: 'An unexpected error occurred. Please try again.',
+        variant: 'destructive',
+      });
+      return false;
+    }
   };
 
   const removeUser = async (userId: string): Promise<boolean> => {
-    if (!isAdmin || userId === currentUser?.id) {
+    if (!userId) {
       toast({
         title: 'Error',
-        description: userId === currentUser?.id 
-          ? 'You cannot remove yourself'
-          : 'Only admins can remove users',
+        description: 'Invalid user ID specified.',
         variant: 'destructive',
       });
       return false;
     }
 
-    // Remove the user's role (effectively deactivating them)
-    const { error } = await supabase
-      .from('user_roles')
-      .delete()
-      .eq('user_id', userId);
-
-    if (error) {
-      console.error('Error removing user role:', error);
+    if (!isAdmin) {
       toast({
-        title: 'Error',
-        description: 'Failed to deactivate user',
+        title: 'Permission Denied',
+        description: 'Only admins can deactivate users.',
         variant: 'destructive',
       });
       return false;
     }
 
-    setUsers(prev =>
-      prev.map(u => (u.id === userId ? { ...u, role: 'user' as AppRole } : u))
-    );
+    if (userId === currentUser?.id) {
+      toast({
+        title: 'Action Not Allowed',
+        description: 'You cannot deactivate your own account.',
+        variant: 'destructive',
+      });
+      return false;
+    }
 
-    toast({
-      title: 'Success',
-      description: 'User deactivated successfully',
-    });
+    try {
+      // Remove the user's role (effectively deactivating them)
+      const { error } = await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', userId);
 
-    return true;
+      if (error) {
+        console.error('Error removing user role:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to deactivate user. Please try again.',
+          variant: 'destructive',
+        });
+        return false;
+      }
+
+      setUsers(prev =>
+        prev.map(u => (u.id === userId ? { ...u, role: 'user' as AppRole } : u))
+      );
+
+      toast({
+        title: 'User Deactivated',
+        description: 'User has been deactivated successfully.',
+      });
+
+      return true;
+    } catch (err) {
+      console.error('Unexpected error removing user:', err);
+      toast({
+        title: 'Error',
+        description: 'An unexpected error occurred. Please try again.',
+        variant: 'destructive',
+      });
+      return false;
+    }
   };
 
   return {

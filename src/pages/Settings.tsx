@@ -57,12 +57,15 @@ import { useWebhookSettings, WebhookFormData } from '@/hooks/useWebhookSettings'
 import { useAuth } from '@/contexts/AuthContext';
 
 const webhookSchema = z.object({
-  name: z.string().min(2, 'Name is required'),
-  webhookUrl: z.string().url('Please enter a valid webhook URL'),
+  name: z.string().trim().min(2, 'Name must be at least 2 characters').max(100, 'Name is too long'),
+  webhookUrl: z.string().url('Please enter a valid webhook URL').max(2000, 'URL is too long'),
   webhookType: z.enum(['slack', 'teams']),
   isActive: z.boolean(),
   notifyOnCheckin: z.boolean(),
   notifyOnCheckout: z.boolean(),
+}).refine((data) => data.notifyOnCheckin || data.notifyOnCheckout, {
+  message: 'At least one notification type must be enabled',
+  path: ['notifyOnCheckin'],
 });
 
 export default function Settings() {
