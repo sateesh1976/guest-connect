@@ -99,22 +99,28 @@ const handler = async (req: Request): Promise<Response> => {
       global: { headers: { Authorization: authHeader } }
     });
 
-    // Validate user and get claims
-    const token = authHeader.replace('Bearer ', '');
-    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
+    // Validate user
+    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
     
-    if (claimsError || !claimsData?.claims) {
-      console.error("JWT validation failed:", claimsError);
+    if (authError || !authUser) {
+      console.error("JWT validation failed:", authError);
       return new Response(
         JSON.stringify({ success: false, error: 'Unauthorized' }),
         { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    const userId = claimsData.claims.sub;
+    const userId = authUser.id;
+
+    // Use service role for role check to bypass RLS
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    if (!supabaseServiceKey) {
+      throw new Error('Missing service role key');
+    }
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
     // Verify user has staff role
-    const { data: roleData, error: roleError } = await supabase
+    const { data: roleData, error: roleError } = await supabaseAdmin
       .from('user_roles')
       .select('role')
       .eq('user_id', userId)
@@ -133,7 +139,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Validate visitor data exists if ID provided
     if (visitor.id) {
-      const { data: visitorData, error: visitorError } = await supabase
+      const { data: visitorData, error: visitorError } = await supabaseAdmin
         .from('visitors')
         .select('id')
         .eq('id', visitor.id)

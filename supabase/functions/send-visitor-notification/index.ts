@@ -70,22 +70,23 @@ serve(async (req) => {
       global: { headers: { Authorization: authHeader } }
     });
 
-    // Validate user and get claims
-    const token = authHeader.replace('Bearer ', '');
-    const { data: claimsData, error: claimsError } = await supabaseUser.auth.getClaims(token);
+    // Validate user
+    const { data: { user: authUser }, error: authError } = await supabaseUser.auth.getUser();
     
-    if (claimsError || !claimsData?.claims) {
-      console.error("JWT validation failed:", claimsError);
+    if (authError || !authUser) {
+      console.error("JWT validation failed:", authError);
       return new Response(
         JSON.stringify({ success: false, error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const userId = claimsData.claims.sub;
+    const userId = authUser.id;
 
-    // Verify user has staff role
-    const { data: roleData, error: roleError } = await supabaseUser
+    // Verify user has staff role using service role client
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+    
+    const { data: roleData, error: roleError } = await supabaseAdmin
       .from('user_roles')
       .select('role')
       .eq('user_id', userId)
@@ -99,16 +100,13 @@ serve(async (req) => {
       );
     }
 
-    // Use service role for webhook settings (admin-only table)
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
-
     const { visitor, eventType } = await req.json() as { visitor: Visitor; eventType: 'checkin' | 'checkout' };
 
     console.log(`Processing ${eventType} notification for visitor:`, visitor.full_name);
 
-    // Validate visitor exists in database
+    // Validate visitor exists in database using service role
     if (visitor.id) {
-      const { data: visitorData, error: visitorError } = await supabaseUser
+      const { data: visitorData, error: visitorError } = await supabaseAdmin
         .from('visitors')
         .select('id')
         .eq('id', visitor.id)

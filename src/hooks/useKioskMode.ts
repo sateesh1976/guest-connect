@@ -12,11 +12,13 @@ export interface KioskFormData {
   purpose: string;
 }
 
-// Generate unique badge ID for kiosk mode
+// Generate unique badge ID for kiosk mode with timestamp to minimize collisions
 const generateKioskBadgeId = (): string => {
-  const year = new Date().getFullYear();
-  const random = Math.floor(1000 + Math.random() * 9000);
-  return `K-${year}-${random}`;
+  const now = new Date();
+  const datePart = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+  const timePart = String(now.getHours()).padStart(2, '0') + String(now.getMinutes()).padStart(2, '0');
+  const random = Math.floor(100 + Math.random() * 900);
+  return `K-${datePart}-${timePart}${random}`;
 };
 
 export function useKioskMode() {

@@ -152,7 +152,7 @@ const PreRegistration = () => {
             <DialogHeader>
               <DialogTitle>Pre-Register Visitor</DialogTitle>
             </DialogHeader>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" noValidate>
               <div className="space-y-2">
                 <Label htmlFor="visitor_name">Visitor Name *</Label>
                 <Input 
