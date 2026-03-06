@@ -101,6 +101,10 @@ const Reports = () => {
   const totalVisitors = filteredVisitors.length;
   const uniqueCompanies = new Set(filteredVisitors.map(v => v.company_name)).size;
   const dailyAverage = Math.round(totalVisitors / Math.max(daysInRange, 1));
+  const peakDay = useMemo(() => {
+    if (dailyData.length === 0) return 0;
+    return Math.max(...dailyData.map(d => d.visitors));
+  }, [dailyData]);
 
   // Export filtered visitors to CSV
   const exportToCSV = () => {
@@ -216,8 +220,8 @@ const Reports = () => {
           iconBgColor="bg-success/10"
         />
         <StatsCard
-          title="Period Total"
-          value={totalVisitors}
+          title="Peak Day"
+          value={peakDay}
           icon={TrendingUp}
           iconColor="text-warning"
           iconBgColor="bg-warning/10"

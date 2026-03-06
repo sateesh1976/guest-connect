@@ -31,11 +31,13 @@ export interface VisitorFormData {
   purpose: string;
 }
 
-// Generate unique badge ID
+// Generate unique badge ID with timestamp component to minimize collisions
 const generateBadgeId = (): string => {
-  const year = new Date().getFullYear();
-  const random = Math.floor(1000 + Math.random() * 9000);
-  return `V-${year}-${random}`;
+  const now = new Date();
+  const datePart = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+  const timePart = String(now.getHours()).padStart(2, '0') + String(now.getMinutes()).padStart(2, '0');
+  const random = Math.floor(100 + Math.random() * 900);
+  return `V-${datePart}-${timePart}${random}`;
 };
 
 export function useVisitorsDB() {
