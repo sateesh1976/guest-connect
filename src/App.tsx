@@ -16,6 +16,7 @@ const Reports = lazy(() => import("./pages/Reports"));
 const Settings = lazy(() => import("./pages/Settings"));
 const UserManagement = lazy(() => import("./pages/UserManagement"));
 const PreRegistration = lazy(() => import("./pages/PreRegistration"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Configure QueryClient with sensible defaults
@@ -45,6 +46,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route 
                 path="/dashboard" 
                 element={
