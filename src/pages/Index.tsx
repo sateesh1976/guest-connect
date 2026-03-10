@@ -13,18 +13,14 @@ const Index = () => {
   const { checkInVisitor: kioskCheckIn } = useKioskMode();
   const { user, isStaff } = useAuth();
 
-  // Memoize counts to prevent unnecessary recalculations
   const checkedInCount = useMemo(() => getCheckedInCount(), [getCheckedInCount]);
   const todayCount = useMemo(() => getTodayVisitorCount(), [getTodayVisitorCount]);
 
-  // Handle visitor check-in - uses kiosk mode for guests, DB for staff
   const handleAddVisitor = useCallback(async (data: VisitorFormData): Promise<Visitor> => {
-    // Non-authenticated users use kiosk mode (no DB write)
     if (!user || !isStaff) {
       return kioskCheckIn(data);
     }
 
-    // Staff members write to DB
     const result = await addVisitor(data);
     
     if (result) {
@@ -41,10 +37,12 @@ const Index = () => {
         checkInTime: result.check_in_time,
         checkOutTime: result.check_out_time || undefined,
         status: result.status,
+        visitorType: (result.visitor_type as Visitor['visitorType']) || 'guest',
+        flatNumber: result.flat_number || undefined,
+        vehicleNumber: result.vehicle_number || undefined,
       };
     }
 
-    // Fallback to kiosk mode if DB insert fails
     return kioskCheckIn(data);
   }, [user, isStaff, addVisitor, kioskCheckIn]);
 
@@ -69,11 +67,11 @@ const Index = () => {
                 <Users className="w-6 h-6 text-success" />
               </div>
               <div>
-            {isLoading ? (
-              <Skeleton className="h-8 w-12 mb-1" />
-            ) : (
-              <p className="text-2xl font-bold text-foreground">{checkedInCount}</p>
-            )}
+                {isLoading ? (
+                  <Skeleton className="h-8 w-12 mb-1" />
+                ) : (
+                  <p className="text-2xl font-bold text-foreground">{checkedInCount}</p>
+                )}
                 <p className="text-sm text-muted-foreground">Current Visitors</p>
               </div>
             </div>
@@ -82,11 +80,11 @@ const Index = () => {
                 <Clock className="w-6 h-6 text-primary" />
               </div>
               <div>
-            {isLoading ? (
-              <Skeleton className="h-8 w-12 mb-1" />
-            ) : (
-              <p className="text-2xl font-bold text-foreground">{todayCount}</p>
-            )}
+                {isLoading ? (
+                  <Skeleton className="h-8 w-12 mb-1" />
+                ) : (
+                  <p className="text-2xl font-bold text-foreground">{todayCount}</p>
+                )}
                 <p className="text-sm text-muted-foreground">Today's Visitors</p>
               </div>
             </div>

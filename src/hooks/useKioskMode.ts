@@ -10,6 +10,9 @@ export interface KioskFormData {
   hostName: string;
   hostEmail?: string;
   purpose: string;
+  visitorType?: string;
+  flatNumber?: string;
+  vehicleNumber?: string;
 }
 
 // Generate unique badge ID for kiosk mode with timestamp to minimize collisions
@@ -38,6 +41,9 @@ export function useKioskMode() {
       purpose: formData.purpose.trim(),
       checkInTime: new Date().toISOString(),
       status: 'checked-in',
+      visitorType: (formData.visitorType as Visitor['visitorType']) || 'guest',
+      flatNumber: formData.flatNumber?.trim() || undefined,
+      vehicleNumber: formData.vehicleNumber?.trim() || undefined,
     };
 
     toast.success('Check-in successful!', {

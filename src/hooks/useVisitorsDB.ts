@@ -19,6 +19,9 @@ export interface DBVisitor {
   created_by: string | null;
   created_at: string;
   updated_at: string;
+  visitor_type: string;
+  flat_number: string | null;
+  vehicle_number: string | null;
 }
 
 export interface VisitorFormData {
@@ -29,6 +32,9 @@ export interface VisitorFormData {
   hostName: string;
   hostEmail?: string;
   purpose: string;
+  visitorType?: string;
+  flatNumber?: string;
+  vehicleNumber?: string;
 }
 
 // Generate unique badge ID with timestamp component to minimize collisions
@@ -62,7 +68,7 @@ export function useVisitorsDB() {
         .from('visitors')
         .select('*')
         .order('check_in_time', { ascending: false })
-        .limit(500); // Reasonable limit for performance
+        .limit(500);
 
       if (fetchError) {
         console.error('Error fetching visitors:', fetchError);
@@ -112,6 +118,9 @@ export function useVisitorsDB() {
           host_email: formData.hostEmail?.trim() || null,
           purpose: formData.purpose.trim(),
           created_by: user.id,
+          visitor_type: formData.visitorType || 'guest',
+          flat_number: formData.flatNumber?.trim() || null,
+          vehicle_number: formData.vehicleNumber?.trim() || null,
         })
         .select()
         .single();

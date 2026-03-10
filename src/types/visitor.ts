@@ -1,3 +1,5 @@
+export type VisitorType = 'guest' | 'delivery' | 'cab' | 'service' | 'other';
+
 export interface Visitor {
   id: string;
   badgeId: string;
@@ -12,6 +14,9 @@ export interface Visitor {
   checkOutTime?: string;
   photoUrl?: string;
   status: 'checked-in' | 'checked-out';
+  visitorType?: VisitorType;
+  flatNumber?: string;
+  vehicleNumber?: string;
 }
 
 export interface VisitorFormData {
@@ -23,6 +28,9 @@ export interface VisitorFormData {
   hostEmail?: string;
   purpose: string;
   photo?: File;
+  visitorType?: VisitorType;
+  flatNumber?: string;
+  vehicleNumber?: string;
 }
 
 export interface WebhookPayload {
@@ -32,4 +40,7 @@ export interface WebhookPayload {
   purpose: string;
   check_in_time: string;
   check_out_time?: string;
+  visitor_type?: string;
+  flat_number?: string;
+  vehicle_number?: string;
 }
