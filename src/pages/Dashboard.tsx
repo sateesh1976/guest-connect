@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from 'react';
-import { Users, UserCheck, UserMinus, Clock, ScanLine, RefreshCw } from 'lucide-react';
+import { Users, UserCheck, UserMinus, Clock, ScanLine, RefreshCw, Package, Car, Wrench } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { StatsCard } from '@/components/dashboard/StatsCard';
 import { VisitorTable } from '@/components/dashboard/VisitorTable';
@@ -22,7 +22,6 @@ const Dashboard = () => {
     refetch 
   } = useVisitorsDB();
 
-  // Convert DBVisitor to Visitor type for components
   const convertToVisitor = useCallback((dbVisitor: DBVisitor): Visitor => ({
     id: dbVisitor.id,
     badgeId: dbVisitor.badge_id,
@@ -36,6 +35,9 @@ const Dashboard = () => {
     checkInTime: dbVisitor.check_in_time,
     checkOutTime: dbVisitor.check_out_time || undefined,
     status: dbVisitor.status,
+    visitorType: (dbVisitor.visitor_type as Visitor['visitorType']) || 'guest',
+    flatNumber: dbVisitor.flat_number || undefined,
+    vehicleNumber: dbVisitor.vehicle_number || undefined,
   }), []);
 
   const visitorsList = useMemo(() => 
@@ -43,7 +45,7 @@ const Dashboard = () => {
     [visitors, convertToVisitor]
   );
 
-  // Calculate checked out today
+  // Checked out today
   const checkedOutToday = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -52,7 +54,7 @@ const Dashboard = () => {
     ).length;
   }, [visitors]);
 
-  // Calculate average visit duration for completed visits
+  // Average visit duration
   const avgDuration = useMemo(() => {
     const completedVisits = visitors.filter(v => v.check_out_time);
     if (completedVisits.length === 0) return '—';
@@ -66,6 +68,18 @@ const Dashboard = () => {
     const avg = totalMinutes / completedVisits.length;
     if (avg < 60) return `${Math.round(avg)}m`;
     return `${Math.round(avg / 60)}h ${Math.round(avg % 60)}m`;
+  }, [visitors]);
+
+  // Visitor type breakdown for today
+  const todayByType = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayVisitors = visitors.filter(v => new Date(v.check_in_time) >= today);
+    return {
+      delivery: todayVisitors.filter(v => v.visitor_type === 'delivery').length,
+      cab: todayVisitors.filter(v => v.visitor_type === 'cab').length,
+      service: todayVisitors.filter(v => v.visitor_type === 'service').length,
+    };
   }, [visitors]);
 
   const handleScanCheckOut = useCallback(async (badgeId: string): Promise<boolean> => {
@@ -124,7 +138,7 @@ const Dashboard = () => {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
         <StatsCard
           title="Currently In"
           value={getCheckedInCount()}
@@ -154,6 +168,30 @@ const Dashboard = () => {
           iconBgColor="bg-secondary"
         />
       </div>
+
+      {/* Quick type breakdown */}
+      {(todayByType.delivery > 0 || todayByType.cab > 0 || todayByType.service > 0) && (
+        <div className="flex flex-wrap gap-3 mb-8">
+          {todayByType.delivery > 0 && (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/10 text-accent text-sm font-medium">
+              <Package className="w-3.5 h-3.5" />
+              {todayByType.delivery} Deliveries
+            </div>
+          )}
+          {todayByType.cab > 0 && (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium">
+              <Car className="w-3.5 h-3.5" />
+              {todayByType.cab} Cabs
+            </div>
+          )}
+          {todayByType.service > 0 && (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-warning/10 text-warning text-sm font-medium">
+              <Wrench className="w-3.5 h-3.5" />
+              {todayByType.service} Service
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Visitor Table */}
       <VisitorTable 

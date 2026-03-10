@@ -15,7 +15,12 @@ import {
   Camera,
   X,
   Upload,
-  Loader2
+  Loader2,
+  Car,
+  Home,
+  Package,
+  Wrench,
+  Users
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,6 +29,7 @@ import { Label } from '@/components/ui/label';
 import { Visitor } from '@/types/visitor';
 import { VisitorQRCode } from './VisitorQRCode';
 import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface VisitorFormData {
   fullName: string;
@@ -33,6 +39,9 @@ interface VisitorFormData {
   hostName: string;
   hostEmail?: string;
   purpose: string;
+  visitorType?: string;
+  flatNumber?: string;
+  vehicleNumber?: string;
 }
 
 const formSchema = z.object({
@@ -43,11 +52,22 @@ const formSchema = z.object({
   hostName: z.string().trim().min(2, 'Host name is required').max(100, 'Host name is too long'),
   hostEmail: z.string().trim().email('Please enter a valid email').max(255).optional().or(z.literal('')),
   purpose: z.string().trim().min(5, 'Please describe your purpose of visit').max(500, 'Purpose is too long'),
+  visitorType: z.enum(['guest', 'delivery', 'cab', 'service', 'other']).default('guest'),
+  flatNumber: z.string().trim().max(20, 'Flat number is too long').optional().or(z.literal('')),
+  vehicleNumber: z.string().trim().max(20, 'Vehicle number is too long').optional().or(z.literal('')),
 });
 
 interface VisitorFormProps {
   onSubmit: (data: VisitorFormData) => Visitor | Promise<Visitor>;
 }
+
+const visitorTypes = [
+  { value: 'guest', label: 'Guest', icon: Users, description: 'Personal visitor' },
+  { value: 'delivery', label: 'Delivery', icon: Package, description: 'Package / food delivery' },
+  { value: 'cab', label: 'Cab / Ride', icon: Car, description: 'Taxi, Uber, Ola' },
+  { value: 'service', label: 'Service', icon: Wrench, description: 'Plumber, electrician, etc.' },
+  { value: 'other', label: 'Other', icon: User, description: 'Other visitor type' },
+];
 
 export function VisitorForm({ onSubmit }: VisitorFormProps) {
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -67,13 +87,11 @@ export function VisitorForm({ onSubmit }: VisitorFormProps) {
     
     if (!file) return;
     
-    // Validate file type
     if (!ALLOWED_TYPES.includes(file.type)) {
       setPhotoError('Please upload a valid image (JPEG, PNG, or WebP)');
       return;
     }
     
-    // Validate file size
     if (file.size > MAX_FILE_SIZE) {
       setPhotoError('Image must be less than 5MB');
       return;
@@ -92,12 +110,8 @@ export function VisitorForm({ onSubmit }: VisitorFormProps) {
   const clearPhoto = () => {
     setPhotoPreview(null);
     setPhotoError(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-    if (cameraInputRef.current) {
-      cameraInputRef.current.value = '';
-    }
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (cameraInputRef.current) cameraInputRef.current.value = '';
   };
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -110,9 +124,14 @@ export function VisitorForm({ onSubmit }: VisitorFormProps) {
       hostName: '',
       hostEmail: '',
       purpose: '',
+      visitorType: 'guest',
+      flatNumber: '',
+      vehicleNumber: '',
     },
     mode: 'onBlur',
   });
+
+  const selectedType = form.watch('visitorType');
 
   const handleSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsSubmitting(true);
@@ -125,12 +144,14 @@ export function VisitorForm({ onSubmit }: VisitorFormProps) {
         purpose: values.purpose.trim(),
         email: values.email?.trim() || undefined,
         hostEmail: values.hostEmail?.trim() || undefined,
+        visitorType: values.visitorType,
+        flatNumber: values.flatNumber?.trim() || undefined,
+        vehicleNumber: values.vehicleNumber?.trim() || undefined,
       };
       const visitor = await onSubmit(formData);
       setCreatedVisitor(visitor);
       setIsSubmitted(true);
     } catch (error) {
-      // Show user-friendly error message
       const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
       form.setError('root', { message: `Check-in failed: ${errorMessage}` });
     } finally {
@@ -144,12 +165,8 @@ export function VisitorForm({ onSubmit }: VisitorFormProps) {
     setCreatedVisitor(null);
     setPhotoPreview(null);
     setPhotoError(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-    if (cameraInputRef.current) {
-      cameraInputRef.current.value = '';
-    }
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (cameraInputRef.current) cameraInputRef.current.value = '';
   };
 
   if (isSubmitted && createdVisitor) {
@@ -175,10 +192,8 @@ export function VisitorForm({ onSubmit }: VisitorFormProps) {
           </div>
           
           <div className="flex flex-col md:flex-row items-center gap-8 justify-center">
-            {/* QR Code */}
             <VisitorQRCode visitor={createdVisitor} />
 
-            {/* Visit Details */}
             <div className="bg-secondary/50 rounded-xl p-6 min-w-[250px]">
               <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">
                 Visit Details
@@ -188,10 +203,22 @@ export function VisitorForm({ onSubmit }: VisitorFormProps) {
                   <p className="text-xs text-muted-foreground">Visitor</p>
                   <p className="font-medium text-foreground">{createdVisitor.fullName}</p>
                 </div>
+                {createdVisitor.visitorType && (
+                  <div>
+                    <p className="text-xs text-muted-foreground">Type</p>
+                    <p className="font-medium text-foreground capitalize">{createdVisitor.visitorType}</p>
+                  </div>
+                )}
                 <div>
                   <p className="text-xs text-muted-foreground">Company</p>
                   <p className="font-medium text-foreground">{createdVisitor.companyName}</p>
                 </div>
+                {createdVisitor.flatNumber && (
+                  <div>
+                    <p className="text-xs text-muted-foreground">Flat / Unit</p>
+                    <p className="font-medium text-foreground">{createdVisitor.flatNumber}</p>
+                  </div>
+                )}
                 <div>
                   <p className="text-xs text-muted-foreground">Visiting</p>
                   <p className="font-medium text-foreground">{createdVisitor.hostName}</p>
@@ -209,17 +236,19 @@ export function VisitorForm({ onSubmit }: VisitorFormProps) {
                   <p className="text-xs text-muted-foreground">Purpose</p>
                   <p className="font-medium text-foreground text-sm">{createdVisitor.purpose}</p>
                 </div>
+                {createdVisitor.vehicleNumber && (
+                  <div>
+                    <p className="text-xs text-muted-foreground">Vehicle</p>
+                    <p className="font-medium text-foreground">{createdVisitor.vehicleNumber}</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
         </div>
 
-        {/* New Check-in Button */}
         <div className="mt-8 pt-6 border-t border-border text-center">
-          <Button 
-            onClick={handleNewCheckIn}
-            className="btn-primary"
-          >
+          <Button onClick={handleNewCheckIn} className="btn-primary">
             New Check-in
             <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
@@ -246,6 +275,37 @@ export function VisitorForm({ onSubmit }: VisitorFormProps) {
             {form.formState.errors.root.message}
           </div>
         )}
+
+        {/* Visitor Type Selection */}
+        <div className="space-y-2">
+          <Label className="flex items-center gap-2">
+            <User className="w-4 h-4 text-muted-foreground" />
+            Visitor Type *
+          </Label>
+          <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+            {visitorTypes.map((type) => {
+              const Icon = type.icon;
+              const isSelected = selectedType === type.value;
+              return (
+                <button
+                  key={type.value}
+                  type="button"
+                  onClick={() => form.setValue('visitorType', type.value as any)}
+                  className={cn(
+                    'flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all text-center',
+                    isSelected
+                      ? 'border-primary bg-primary/5 text-primary'
+                      : 'border-border hover:border-primary/30 text-muted-foreground hover:text-foreground'
+                  )}
+                >
+                  <Icon className="w-5 h-5" />
+                  <span className="text-xs font-medium">{type.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         <div className="grid md:grid-cols-2 gap-6">
           <div className="space-y-2">
             <Label htmlFor="fullName" className="flex items-center gap-2">
@@ -271,13 +331,45 @@ export function VisitorForm({ onSubmit }: VisitorFormProps) {
             </Label>
             <Input 
               id="phoneNumber"
-              placeholder="+1 555-0123" 
+              placeholder="+91 98765 43210" 
               className="input-focus"
               autoComplete="tel"
               {...form.register('phoneNumber')}
             />
             {form.formState.errors.phoneNumber && (
               <p className="text-sm text-destructive">{form.formState.errors.phoneNumber.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="flatNumber" className="flex items-center gap-2">
+              <Home className="w-4 h-4 text-muted-foreground" />
+              Flat / Unit No. *
+            </Label>
+            <Input 
+              id="flatNumber"
+              placeholder="A-101, B-202" 
+              className="input-focus"
+              {...form.register('flatNumber')}
+            />
+            {form.formState.errors.flatNumber && (
+              <p className="text-sm text-destructive">{form.formState.errors.flatNumber.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="vehicleNumber" className="flex items-center gap-2">
+              <Car className="w-4 h-4 text-muted-foreground" />
+              Vehicle Number (Optional)
+            </Label>
+            <Input 
+              id="vehicleNumber"
+              placeholder="MH 01 AB 1234" 
+              className="input-focus"
+              {...form.register('vehicleNumber')}
+            />
+            {form.formState.errors.vehicleNumber && (
+              <p className="text-sm text-destructive">{form.formState.errors.vehicleNumber.message}</p>
             )}
           </div>
 
@@ -302,11 +394,11 @@ export function VisitorForm({ onSubmit }: VisitorFormProps) {
           <div className="space-y-2">
             <Label htmlFor="companyName" className="flex items-center gap-2">
               <Building className="w-4 h-4 text-muted-foreground" />
-              Company Name *
+              Company / From *
             </Label>
             <Input 
               id="companyName"
-              placeholder="Acme Corporation" 
+              placeholder="Acme Corp / Swiggy / Self" 
               className="input-focus"
               autoComplete="organization"
               {...form.register('companyName')}
@@ -323,7 +415,7 @@ export function VisitorForm({ onSubmit }: VisitorFormProps) {
             </Label>
             <Input 
               id="hostName"
-              placeholder="Jane Doe" 
+              placeholder="Resident / Host name" 
               className="input-focus"
               {...form.register('hostName')}
             />
@@ -340,7 +432,7 @@ export function VisitorForm({ onSubmit }: VisitorFormProps) {
             <Input 
               id="hostEmail"
               type="email"
-              placeholder="jane.doe@company.com" 
+              placeholder="resident@email.com" 
               className="input-focus"
               {...form.register('hostEmail')}
             />
@@ -386,42 +478,14 @@ export function VisitorForm({ onSubmit }: VisitorFormProps) {
               </div>
             )}
             <div className="flex-1 space-y-2">
-              {/* Hidden file input for gallery upload */}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
-                onChange={handlePhotoChange}
-                className="hidden"
-                aria-hidden="true"
-              />
-              {/* Camera capture input - uses capture attribute for mobile */}
-              <input
-                ref={cameraInputRef}
-                id="camera-capture"
-                type="file"
-                accept="image/*"
-                capture="user"
-                onChange={handlePhotoChange}
-                className="hidden"
-                aria-hidden="true"
-              />
+              <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" onChange={handlePhotoChange} className="hidden" aria-hidden="true" />
+              <input ref={cameraInputRef} id="camera-capture" type="file" accept="image/*" capture="user" onChange={handlePhotoChange} className="hidden" aria-hidden="true" />
               <div className="flex flex-wrap gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => cameraInputRef.current?.click()}
-                >
+                <Button type="button" variant="outline" size="sm" onClick={() => cameraInputRef.current?.click()}>
                   <Camera className="w-4 h-4 mr-1" />
                   Take Photo
                 </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => fileInputRef.current?.click()}
-                >
+                <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
                   <Upload className="w-4 h-4 mr-1" />
                   {photoPreview ? 'Change' : 'Upload'}
                 </Button>

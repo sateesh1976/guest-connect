@@ -8,7 +8,12 @@ import {
   FileText,
   Clock,
   LogIn,
-  LogOut
+  LogOut,
+  Home,
+  Car,
+  Package,
+  Wrench,
+  Users
 } from 'lucide-react';
 import {
   Dialog,
@@ -26,6 +31,14 @@ interface VisitorDetailsDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
+const typeConfig: Record<string, { label: string; icon: typeof Users; className: string }> = {
+  guest: { label: 'Guest', icon: Users, className: 'bg-primary/10 text-primary border-primary/20' },
+  delivery: { label: 'Delivery', icon: Package, className: 'bg-accent/10 text-accent border-accent/20' },
+  cab: { label: 'Cab / Ride', icon: Car, className: 'bg-warning/10 text-warning border-warning/20' },
+  service: { label: 'Service', icon: Wrench, className: 'bg-success/10 text-success border-success/20' },
+  other: { label: 'Other', icon: User, className: 'bg-muted text-muted-foreground border-border' },
+};
+
 export function VisitorDetailsDialog({ visitor, open, onOpenChange }: VisitorDetailsDialogProps) {
   if (!visitor) return null;
 
@@ -38,6 +51,9 @@ export function VisitorDetailsDialog({ visitor, open, onOpenChange }: VisitorDet
     const minutes = mins % 60;
     return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
   };
+
+  const vType = typeConfig[visitor.visitorType || 'guest'] || typeConfig.guest;
+  const TypeIcon = vType.icon;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -52,12 +68,12 @@ export function VisitorDetailsDialog({ visitor, open, onOpenChange }: VisitorDet
                   className="w-12 h-12 rounded-full object-cover"
                 />
               ) : (
-              <User className="w-6 h-6 text-primary" aria-hidden="true" />
-            )}
+                <User className="w-6 h-6 text-primary" aria-hidden="true" />
+              )}
             </div>
             <div>
               <p className="text-lg font-semibold">{visitor.fullName}</p>
-              <div className="flex items-center gap-2 mt-1">
+              <div className="flex items-center gap-2 mt-1 flex-wrap">
                 <Badge 
                   variant="outline"
                   className={cn(
@@ -69,8 +85,9 @@ export function VisitorDetailsDialog({ visitor, open, onOpenChange }: VisitorDet
                 >
                   {visitor.status === 'checked-in' ? 'Checked In' : 'Checked Out'}
                 </Badge>
-                <span className="text-xs font-mono text-muted-foreground">
-                  {visitor.badgeId}
+                <span className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border', vType.className)}>
+                  <TypeIcon className="w-3 h-3" />
+                  {vType.label}
                 </span>
               </div>
             </div>
@@ -101,12 +118,36 @@ export function VisitorDetailsDialog({ visitor, open, onOpenChange }: VisitorDet
             )}
           </div>
 
+          {/* Flat & Vehicle */}
+          {(visitor.flatNumber || visitor.vehicleNumber) && (
+            <div className="grid grid-cols-2 gap-4 pt-3 border-t border-border">
+              {visitor.flatNumber && (
+                <div className="flex items-start gap-3">
+                  <Home className="w-4 h-4 text-muted-foreground mt-0.5" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Flat / Unit</p>
+                    <p className="text-sm font-medium">{visitor.flatNumber}</p>
+                  </div>
+                </div>
+              )}
+              {visitor.vehicleNumber && (
+                <div className="flex items-start gap-3">
+                  <Car className="w-4 h-4 text-muted-foreground mt-0.5" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Vehicle</p>
+                    <p className="text-sm font-medium">{visitor.vehicleNumber}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Company & Host */}
           <div className="grid grid-cols-2 gap-4 pt-3 border-t border-border">
             <div className="flex items-start gap-3">
               <Building className="w-4 h-4 text-muted-foreground mt-0.5" />
               <div>
-                <p className="text-xs text-muted-foreground">Company</p>
+                <p className="text-xs text-muted-foreground">Company / From</p>
                 <p className="text-sm font-medium">{visitor.companyName}</p>
               </div>
             </div>

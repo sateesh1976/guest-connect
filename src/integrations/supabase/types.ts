@@ -61,6 +61,7 @@ export type Database = {
           created_at: string
           expected_date: string
           expected_time: string | null
+          flat_number: string | null
           host_email: string | null
           host_name: string
           host_user_id: string
@@ -73,11 +74,13 @@ export type Database = {
           visitor_email: string | null
           visitor_name: string
           visitor_phone: string | null
+          visitor_type: string
         }
         Insert: {
           created_at?: string
           expected_date: string
           expected_time?: string | null
+          flat_number?: string | null
           host_email?: string | null
           host_name: string
           host_user_id: string
@@ -90,11 +93,13 @@ export type Database = {
           visitor_email?: string | null
           visitor_name: string
           visitor_phone?: string | null
+          visitor_type?: string
         }
         Update: {
           created_at?: string
           expected_date?: string
           expected_time?: string | null
+          flat_number?: string | null
           host_email?: string | null
           host_name?: string
           host_user_id?: string
@@ -107,6 +112,7 @@ export type Database = {
           visitor_email?: string | null
           visitor_name?: string
           visitor_phone?: string | null
+          visitor_type?: string
         }
         Relationships: []
       }
@@ -164,6 +170,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           email: string | null
+          flat_number: string | null
           full_name: string
           host_email: string | null
           host_name: string
@@ -172,6 +179,8 @@ export type Database = {
           purpose: string
           status: string
           updated_at: string
+          vehicle_number: string | null
+          visitor_type: string
         }
         Insert: {
           badge_id: string
@@ -181,6 +190,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           email?: string | null
+          flat_number?: string | null
           full_name: string
           host_email?: string | null
           host_name: string
@@ -189,6 +199,8 @@ export type Database = {
           purpose: string
           status?: string
           updated_at?: string
+          vehicle_number?: string | null
+          visitor_type?: string
         }
         Update: {
           badge_id?: string
@@ -198,6 +210,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           email?: string | null
+          flat_number?: string | null
           full_name?: string
           host_email?: string | null
           host_name?: string
@@ -206,6 +219,8 @@ export type Database = {
           purpose?: string
           status?: string
           updated_at?: string
+          vehicle_number?: string | null
+          visitor_type?: string
         }
         Relationships: []
       }
@@ -276,6 +291,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "receptionist" | "user"
+      visitor_type: "guest" | "delivery" | "cab" | "service" | "other"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -404,6 +420,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "receptionist", "user"],
+      visitor_type: ["guest", "delivery", "cab", "service", "other"],
     },
   },
 } as const
