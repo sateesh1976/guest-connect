@@ -159,6 +159,38 @@ const PreRegistration = () => {
               <DialogTitle>Pre-Register Visitor</DialogTitle>
             </DialogHeader>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" noValidate>
+              {/* Visitor Type */}
+              <div className="space-y-2">
+                <Label>Visitor Type</Label>
+                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                  {[
+                    { value: 'guest', label: 'Guest', icon: Users },
+                    { value: 'delivery', label: 'Delivery', icon: Package },
+                    { value: 'cab', label: 'Cab', icon: Car },
+                    { value: 'service', label: 'Service', icon: Wrench },
+                    { value: 'other', label: 'Other', icon: User },
+                  ].map((type) => {
+                    const Icon = type.icon;
+                    const isSelected = form.watch('visitor_type') === type.value;
+                    return (
+                      <button
+                        key={type.value}
+                        type="button"
+                        onClick={() => form.setValue('visitor_type', type.value as any)}
+                        className={`flex flex-col items-center gap-1 p-2 rounded-lg border-2 transition-all text-center ${
+                          isSelected
+                            ? 'border-primary bg-primary/5 text-primary'
+                            : 'border-border hover:border-primary/30 text-muted-foreground'
+                        }`}
+                      >
+                        <Icon className="w-4 h-4" />
+                        <span className="text-[10px] font-medium">{type.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="visitor_name">Visitor Name *</Label>
                 <Input 
