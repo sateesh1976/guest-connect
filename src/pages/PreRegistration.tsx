@@ -394,10 +394,19 @@ const PreRegistration = () => {
                       <div className="min-w-0">
                         <CardTitle className="text-lg truncate">{pr.visitor_name}</CardTitle>
                         <CardDescription className="flex items-center gap-2 flex-wrap">
+                          {pr.visitor_type && pr.visitor_type !== 'guest' && (
+                            <span className="text-xs capitalize">{pr.visitor_type}</span>
+                          )}
                           {pr.visitor_company && (
                             <span className="flex items-center gap-1">
                               <Building2 className="h-3 w-3" />
                               {pr.visitor_company}
+                            </span>
+                          )}
+                          {pr.flat_number && (
+                            <span className="flex items-center gap-1">
+                              <Home className="h-3 w-3" />
+                              {pr.flat_number}
                             </span>
                           )}
                           {pr.visitor_email && (
