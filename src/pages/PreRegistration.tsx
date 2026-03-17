@@ -40,6 +40,8 @@ const formSchema = z.object({
   visitor_email: z.string().trim().email('Invalid email').max(255).optional().or(z.literal('')),
   visitor_phone: z.string().trim().max(20).optional(),
   visitor_company: z.string().trim().max(100).optional(),
+  visitor_type: z.enum(['guest', 'delivery', 'cab', 'service', 'other']).default('guest'),
+  flat_number: z.string().trim().max(20).optional().or(z.literal('')),
   expected_date: z.string().min(1, 'Date is required'),
   expected_time: z.string().optional(),
   purpose: z.string().trim().max(200).optional(),
