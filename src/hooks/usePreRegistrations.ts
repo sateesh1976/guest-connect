@@ -120,6 +120,8 @@ export function usePreRegistrations() {
         visitor_email: formData.visitor_email?.trim() || null,
         visitor_phone: formData.visitor_phone?.trim() || null,
         visitor_company: formData.visitor_company?.trim() || null,
+        visitor_type: formData.visitor_type || 'guest',
+        flat_number: formData.flat_number?.trim() || null,
         host_user_id: user.id,
         host_name: profile?.display_name || user.email?.split('@')[0] || 'Unknown Host',
         host_email: profile?.email || user.email || null,
