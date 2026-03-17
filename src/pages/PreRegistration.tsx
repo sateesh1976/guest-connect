@@ -70,6 +70,8 @@ const PreRegistration = () => {
       visitor_email: '',
       visitor_phone: '',
       visitor_company: '',
+      visitor_type: 'guest',
+      flat_number: '',
       expected_date: '',
       expected_time: '',
       purpose: '',
