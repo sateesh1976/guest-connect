@@ -88,6 +88,8 @@ const PreRegistration = () => {
         visitor_email: values.visitor_email?.trim() || undefined,
         visitor_phone: values.visitor_phone?.trim() || undefined,
         visitor_company: values.visitor_company?.trim() || undefined,
+        visitor_type: values.visitor_type,
+        flat_number: values.flat_number?.trim() || undefined,
         expected_date: values.expected_date,
         expected_time: values.expected_time || undefined,
         purpose: values.purpose?.trim() || undefined,
