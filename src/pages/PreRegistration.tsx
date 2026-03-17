@@ -248,24 +248,6 @@ const PreRegistration = () => {
                   />
                 </div>
               </div>
-              {/* Flat / Unit */}
-              <div className="space-y-2">
-                <Label htmlFor="flat_number">Flat / Unit No.</Label>
-                <Input 
-                  id="flat_number"
-                  placeholder="A-101, B-202"
-                  {...form.register('flat_number')} 
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="visitor_company">Company</Label>
-                <Input 
-                  id="visitor_company"
-                  placeholder="Acme Corp" 
-                  autoComplete="organization"
-                  {...form.register('visitor_company')} 
-                />
-              </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
