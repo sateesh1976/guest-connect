@@ -9,6 +9,8 @@ export interface PreRegistration {
   visitor_email: string | null;
   visitor_phone: string | null;
   visitor_company: string | null;
+  visitor_type: string;
+  flat_number: string | null;
   host_user_id: string;
   host_name: string;
   host_email: string | null;
@@ -26,6 +28,8 @@ export interface PreRegistrationFormData {
   visitor_email?: string;
   visitor_phone?: string;
   visitor_company?: string;
+  visitor_type?: string;
+  flat_number?: string;
   expected_date: string;
   expected_time?: string;
   purpose?: string;
@@ -118,6 +122,8 @@ export function usePreRegistrations() {
         visitor_email: formData.visitor_email?.trim() || null,
         visitor_phone: formData.visitor_phone?.trim() || null,
         visitor_company: formData.visitor_company?.trim() || null,
+        visitor_type: formData.visitor_type || 'guest',
+        flat_number: formData.flat_number?.trim() || null,
         host_user_id: user.id,
         host_name: profile?.display_name || user.email?.split('@')[0] || 'Unknown Host',
         host_email: profile?.email || user.email || null,

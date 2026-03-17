@@ -72,6 +72,26 @@ const Reports = () => {
       .map(([name, value]) => ({ name, value }));
   }, [filteredVisitors]);
 
+  // Visitor type distribution
+  const visitorTypeData = useMemo(() => {
+    const typeLabels: Record<string, string> = {
+      guest: 'Guest',
+      delivery: 'Delivery',
+      cab: 'Cab / Ride',
+      service: 'Service',
+      other: 'Other',
+    };
+    const typeCount: Record<string, number> = {};
+    filteredVisitors.forEach(v => {
+      const t = v.visitor_type || 'guest';
+      typeCount[t] = (typeCount[t] || 0) + 1;
+    });
+    return Object.entries(typeCount)
+      .map(([key, value]) => ({ name: typeLabels[key] || key, value }))
+      .filter(d => d.value > 0)
+      .sort((a, b) => b.value - a.value);
+  }, [filteredVisitors]);
+
   // Purpose distribution
   const purposeData = useMemo(() => {
     const purposeKeywords = ['Meeting', 'Interview', 'Delivery', 'Maintenance', 'Other'];
@@ -121,7 +141,10 @@ const Reports = () => {
       'Name',
       'Phone',
       'Email',
+      'Type',
       'Company',
+      'Flat/Unit',
+      'Vehicle',
       'Host',
       'Purpose',
       'Check-in Time',
@@ -133,7 +156,10 @@ const Reports = () => {
       v.full_name,
       v.phone_number,
       v.email || '',
+      v.visitor_type || 'guest',
       v.company_name,
+      v.flat_number || '',
+      v.vehicle_number || '',
       v.host_name,
       v.purpose,
       format(new Date(v.check_in_time), 'yyyy-MM-dd HH:mm'),
@@ -268,15 +294,15 @@ const Reports = () => {
           </div>
         </div>
 
-        {/* Purpose Distribution */}
+        {/* Visitor Type Distribution */}
         <div className="card-elevated p-6">
-          <h3 className="text-lg font-semibold text-foreground mb-4">Visit Purpose Distribution</h3>
+          <h3 className="text-lg font-semibold text-foreground mb-4">Visitor Type Distribution</h3>
           <div className="h-[280px]">
-            {purposeData.length > 0 ? (
+            {visitorTypeData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <PieChart role="img" aria-label="Visit purpose distribution pie chart">
+                <PieChart role="img" aria-label="Visitor type distribution pie chart">
                   <Pie
-                    data={purposeData}
+                    data={visitorTypeData}
                     cx="50%"
                     cy="50%"
                     innerRadius={50}
@@ -284,7 +310,7 @@ const Reports = () => {
                     paddingAngle={2}
                     dataKey="value"
                   >
-                    {purposeData.map((_, index) => (
+                    {visitorTypeData.map((_, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>

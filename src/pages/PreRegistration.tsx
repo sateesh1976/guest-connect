@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import { format, isToday, isTomorrow, isPast, parseISO } from 'date-fns';
-import { Plus, Calendar, Clock, Building2, User, XCircle, CheckCircle2, AlertCircle, Loader2, RefreshCw } from 'lucide-react';
+import { Plus, Calendar, Clock, Building2, User, XCircle, CheckCircle2, AlertCircle, Loader2, RefreshCw, Home, Package, Car, Wrench, Users } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -40,6 +40,8 @@ const formSchema = z.object({
   visitor_email: z.string().trim().email('Invalid email').max(255).optional().or(z.literal('')),
   visitor_phone: z.string().trim().max(20).optional(),
   visitor_company: z.string().trim().max(100).optional(),
+  visitor_type: z.enum(['guest', 'delivery', 'cab', 'service', 'other']).default('guest'),
+  flat_number: z.string().trim().max(20).optional().or(z.literal('')),
   expected_date: z.string().min(1, 'Date is required'),
   expected_time: z.string().optional(),
   purpose: z.string().trim().max(200).optional(),
@@ -68,6 +70,8 @@ const PreRegistration = () => {
       visitor_email: '',
       visitor_phone: '',
       visitor_company: '',
+      visitor_type: 'guest',
+      flat_number: '',
       expected_date: '',
       expected_time: '',
       purpose: '',
@@ -84,6 +88,8 @@ const PreRegistration = () => {
         visitor_email: values.visitor_email?.trim() || undefined,
         visitor_phone: values.visitor_phone?.trim() || undefined,
         visitor_company: values.visitor_company?.trim() || undefined,
+        visitor_type: values.visitor_type,
+        flat_number: values.flat_number?.trim() || undefined,
         expected_date: values.expected_date,
         expected_time: values.expected_time || undefined,
         purpose: values.purpose?.trim() || undefined,
@@ -153,6 +159,38 @@ const PreRegistration = () => {
               <DialogTitle>Pre-Register Visitor</DialogTitle>
             </DialogHeader>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" noValidate>
+              {/* Visitor Type */}
+              <div className="space-y-2">
+                <Label>Visitor Type</Label>
+                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                  {[
+                    { value: 'guest', label: 'Guest', icon: Users },
+                    { value: 'delivery', label: 'Delivery', icon: Package },
+                    { value: 'cab', label: 'Cab', icon: Car },
+                    { value: 'service', label: 'Service', icon: Wrench },
+                    { value: 'other', label: 'Other', icon: User },
+                  ].map((type) => {
+                    const Icon = type.icon;
+                    const isSelected = form.watch('visitor_type') === type.value;
+                    return (
+                      <button
+                        key={type.value}
+                        type="button"
+                        onClick={() => form.setValue('visitor_type', type.value as any)}
+                        className={`flex flex-col items-center gap-1 p-2 rounded-lg border-2 transition-all text-center ${
+                          isSelected
+                            ? 'border-primary bg-primary/5 text-primary'
+                            : 'border-border hover:border-primary/30 text-muted-foreground'
+                        }`}
+                      >
+                        <Icon className="w-4 h-4" />
+                        <span className="text-[10px] font-medium">{type.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="visitor_name">Visitor Name *</Label>
                 <Input 
@@ -191,14 +229,24 @@ const PreRegistration = () => {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="visitor_company">Company</Label>
-                <Input 
-                  id="visitor_company"
-                  placeholder="Acme Corp" 
-                  autoComplete="organization"
-                  {...form.register('visitor_company')} 
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="visitor_company">Company</Label>
+                  <Input 
+                    id="visitor_company"
+                    placeholder="Acme Corp" 
+                    autoComplete="organization"
+                    {...form.register('visitor_company')} 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="flat_number">Flat / Unit No.</Label>
+                  <Input 
+                    id="flat_number"
+                    placeholder="A-101"
+                    {...form.register('flat_number')} 
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -346,10 +394,19 @@ const PreRegistration = () => {
                       <div className="min-w-0">
                         <CardTitle className="text-lg truncate">{pr.visitor_name}</CardTitle>
                         <CardDescription className="flex items-center gap-2 flex-wrap">
+                          {pr.visitor_type && pr.visitor_type !== 'guest' && (
+                            <span className="text-xs capitalize">{pr.visitor_type}</span>
+                          )}
                           {pr.visitor_company && (
                             <span className="flex items-center gap-1">
                               <Building2 className="h-3 w-3" />
                               {pr.visitor_company}
+                            </span>
+                          )}
+                          {pr.flat_number && (
+                            <span className="flex items-center gap-1">
+                              <Home className="h-3 w-3" />
+                              {pr.flat_number}
                             </span>
                           )}
                           {pr.visitor_email && (

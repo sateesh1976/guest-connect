@@ -344,7 +344,7 @@ export function VisitorForm({ onSubmit }: VisitorFormProps) {
           <div className="space-y-2">
             <Label htmlFor="flatNumber" className="flex items-center gap-2">
               <Home className="w-4 h-4 text-muted-foreground" />
-              Flat / Unit No. *
+              Flat / Unit No.
             </Label>
             <Input 
               id="flatNumber"
