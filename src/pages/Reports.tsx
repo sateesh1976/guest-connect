@@ -294,15 +294,15 @@ const Reports = () => {
           </div>
         </div>
 
-        {/* Purpose Distribution */}
+        {/* Visitor Type Distribution */}
         <div className="card-elevated p-6">
-          <h3 className="text-lg font-semibold text-foreground mb-4">Visit Purpose Distribution</h3>
+          <h3 className="text-lg font-semibold text-foreground mb-4">Visitor Type Distribution</h3>
           <div className="h-[280px]">
-            {purposeData.length > 0 ? (
+            {visitorTypeData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <PieChart role="img" aria-label="Visit purpose distribution pie chart">
+                <PieChart role="img" aria-label="Visitor type distribution pie chart">
                   <Pie
-                    data={purposeData}
+                    data={visitorTypeData}
                     cx="50%"
                     cy="50%"
                     innerRadius={50}
@@ -310,7 +310,7 @@ const Reports = () => {
                     paddingAngle={2}
                     dataKey="value"
                   >
-                    {purposeData.map((_, index) => (
+                    {visitorTypeData.map((_, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
