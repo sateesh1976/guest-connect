@@ -26,6 +26,8 @@ export interface PreRegistrationFormData {
   visitor_email?: string;
   visitor_phone?: string;
   visitor_company?: string;
+  visitor_type?: string;
+  flat_number?: string;
   expected_date: string;
   expected_time?: string;
   purpose?: string;
