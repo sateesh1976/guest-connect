@@ -72,6 +72,26 @@ const Reports = () => {
       .map(([name, value]) => ({ name, value }));
   }, [filteredVisitors]);
 
+  // Visitor type distribution
+  const visitorTypeData = useMemo(() => {
+    const typeLabels: Record<string, string> = {
+      guest: 'Guest',
+      delivery: 'Delivery',
+      cab: 'Cab / Ride',
+      service: 'Service',
+      other: 'Other',
+    };
+    const typeCount: Record<string, number> = {};
+    filteredVisitors.forEach(v => {
+      const t = v.visitor_type || 'guest';
+      typeCount[t] = (typeCount[t] || 0) + 1;
+    });
+    return Object.entries(typeCount)
+      .map(([key, value]) => ({ name: typeLabels[key] || key, value }))
+      .filter(d => d.value > 0)
+      .sort((a, b) => b.value - a.value);
+  }, [filteredVisitors]);
+
   // Purpose distribution
   const purposeData = useMemo(() => {
     const purposeKeywords = ['Meeting', 'Interview', 'Delivery', 'Maintenance', 'Other'];
