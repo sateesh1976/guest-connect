@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import { format, isToday, isTomorrow, isPast, parseISO } from 'date-fns';
-import { Plus, Calendar, Clock, Building2, User, XCircle, CheckCircle2, AlertCircle, Loader2, RefreshCw } from 'lucide-react';
+import { Plus, Calendar, Clock, Building2, User, XCircle, CheckCircle2, AlertCircle, Loader2, RefreshCw, Home, Package, Car, Wrench, Users } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
