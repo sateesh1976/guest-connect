@@ -9,6 +9,8 @@ export interface PreRegistration {
   visitor_email: string | null;
   visitor_phone: string | null;
   visitor_company: string | null;
+  visitor_type: string;
+  flat_number: string | null;
   host_user_id: string;
   host_name: string;
   host_email: string | null;
