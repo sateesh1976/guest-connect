@@ -14,7 +14,6 @@ import {
   QrCode,
   Camera,
   X,
-  Upload,
   Loader2,
   Car,
   Home,
@@ -75,7 +74,6 @@ export function VisitorForm({ onSubmit }: VisitorFormProps) {
   const [createdVisitor, setCreatedVisitor] = useState<Visitor | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [photoError, setPhotoError] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -110,7 +108,6 @@ export function VisitorForm({ onSubmit }: VisitorFormProps) {
   const clearPhoto = () => {
     setPhotoPreview(null);
     setPhotoError(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
     if (cameraInputRef.current) cameraInputRef.current.value = '';
   };
 
@@ -165,7 +162,6 @@ export function VisitorForm({ onSubmit }: VisitorFormProps) {
     setCreatedVisitor(null);
     setPhotoPreview(null);
     setPhotoError(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
     if (cameraInputRef.current) cameraInputRef.current.value = '';
   };
 
@@ -442,13 +438,13 @@ export function VisitorForm({ onSubmit }: VisitorFormProps) {
           </div>
         </div>
 
-        {/* Photo Upload */}
+        {/* Photo Capture */}
         <div className="space-y-2">
           <Label className="flex items-center gap-2">
             <Camera className="w-4 h-4 text-muted-foreground" />
             Photo (Optional)
           </Label>
-          <div className="flex items-start gap-4">
+          <div className="flex items-center gap-4">
             {photoPreview ? (
               <div className="relative shrink-0">
                 <img 
@@ -466,32 +462,26 @@ export function VisitorForm({ onSubmit }: VisitorFormProps) {
                 </button>
               </div>
             ) : (
-              <div 
-                onClick={() => fileInputRef.current?.click()}
-                className="w-20 h-20 shrink-0 rounded-xl border-2 border-dashed border-border hover:border-primary/50 flex items-center justify-center cursor-pointer transition-colors bg-secondary/30"
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => e.key === 'Enter' && fileInputRef.current?.click()}
-                aria-label="Upload photo"
+              <button
+                type="button"
+                onClick={() => cameraInputRef.current?.click()}
+                className="w-20 h-20 shrink-0 rounded-xl border-2 border-dashed border-border hover:border-primary/50 flex flex-col items-center justify-center gap-1 cursor-pointer transition-colors bg-secondary/30"
+                aria-label="Capture photo"
               >
                 <Camera className="w-6 h-6 text-muted-foreground" />
-              </div>
+                <span className="text-[10px] text-muted-foreground">Capture</span>
+              </button>
             )}
-            <div className="flex-1 space-y-2">
-              <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" onChange={handlePhotoChange} className="hidden" aria-hidden="true" />
-              <input ref={cameraInputRef} id="camera-capture" type="file" accept="image/*" capture="user" onChange={handlePhotoChange} className="hidden" aria-hidden="true" />
-              <div className="flex flex-wrap gap-2">
+            <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" onChange={handlePhotoChange} className="hidden" aria-hidden="true" />
+            <div className="flex-1 space-y-1">
+              {photoPreview && (
                 <Button type="button" variant="outline" size="sm" onClick={() => cameraInputRef.current?.click()}>
                   <Camera className="w-4 h-4 mr-1" />
-                  Take Photo
+                  Retake
                 </Button>
-                <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
-                  <Upload className="w-4 h-4 mr-1" />
-                  {photoPreview ? 'Change' : 'Upload'}
-                </Button>
-              </div>
+              )}
               <p className="text-xs text-muted-foreground">
-                Capture directly or upload from device (max 5MB)
+                Tap to capture visitor photo (max 5MB)
               </p>
               {photoError && (
                 <p className="text-sm text-destructive">{photoError}</p>
