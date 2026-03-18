@@ -108,7 +108,6 @@ export function VisitorForm({ onSubmit }: VisitorFormProps) {
   const clearPhoto = () => {
     setPhotoPreview(null);
     setPhotoError(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
     if (cameraInputRef.current) cameraInputRef.current.value = '';
   };
 
