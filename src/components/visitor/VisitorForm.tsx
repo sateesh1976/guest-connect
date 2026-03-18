@@ -14,7 +14,6 @@ import {
   QrCode,
   Camera,
   X,
-  Upload,
   Loader2,
   Car,
   Home,
