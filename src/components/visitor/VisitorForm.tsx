@@ -409,50 +409,11 @@ export function VisitorForm({ onSubmit }: VisitorFormProps) {
             <Camera className="w-4 h-4 text-muted-foreground" />
             Photo (Optional)
           </Label>
-          <div className="flex items-center gap-4">
-            {photoPreview ? (
-              <div className="relative shrink-0">
-                <img 
-                  src={photoPreview} 
-                  alt="Visitor preview" 
-                  className="w-20 h-20 rounded-xl object-cover border border-border"
-                />
-                <button
-                  type="button"
-                  onClick={clearPhoto}
-                  className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center shadow-md hover:bg-destructive/90 transition-colors"
-                  aria-label="Remove photo"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => cameraInputRef.current?.click()}
-                className="w-20 h-20 shrink-0 rounded-xl border-2 border-dashed border-border hover:border-primary/50 flex flex-col items-center justify-center gap-1 cursor-pointer transition-colors bg-secondary/30"
-                aria-label="Capture photo"
-              >
-                <Camera className="w-6 h-6 text-muted-foreground" />
-                <span className="text-[10px] text-muted-foreground">Capture</span>
-              </button>
-            )}
-            <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" onChange={handlePhotoChange} className="hidden" aria-hidden="true" />
-            <div className="flex-1 space-y-1">
-              {photoPreview && (
-                <Button type="button" variant="outline" size="sm" onClick={() => cameraInputRef.current?.click()}>
-                  <Camera className="w-4 h-4 mr-1" />
-                  Retake
-                </Button>
-              )}
-              <p className="text-xs text-muted-foreground">
-                Tap to capture visitor photo (max 5MB)
-              </p>
-              {photoError && (
-                <p className="text-sm text-destructive">{photoError}</p>
-              )}
-            </div>
-          </div>
+          <CameraCapture
+            photoPreview={photoPreview}
+            onCapture={(dataUrl) => setPhotoPreview(dataUrl)}
+            onClear={clearPhoto}
+          />
         </div>
 
         <div className="space-y-2">
