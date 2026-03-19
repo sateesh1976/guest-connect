@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -13,7 +13,6 @@ import {
   ArrowRight,
   QrCode,
   Camera,
-  X,
   Loader2,
   Car,
   Home,
@@ -27,6 +26,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Visitor } from '@/types/visitor';
 import { VisitorQRCode } from './VisitorQRCode';
+import { CameraCapture } from './CameraCapture';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
