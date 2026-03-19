@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -13,7 +13,6 @@ import {
   ArrowRight,
   QrCode,
   Camera,
-  X,
   Loader2,
   Car,
   Home,
@@ -27,6 +26,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Visitor } from '@/types/visitor';
 import { VisitorQRCode } from './VisitorQRCode';
+import { CameraCapture } from './CameraCapture';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
@@ -73,42 +73,9 @@ export function VisitorForm({ onSubmit }: VisitorFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [createdVisitor, setCreatedVisitor] = useState<Visitor | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
-  const [photoError, setPhotoError] = useState<string | null>(null);
-  const cameraInputRef = useRef<HTMLInputElement>(null);
-
-  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-  const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
-
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    setPhotoError(null);
-    
-    if (!file) return;
-    
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      setPhotoError('Please upload a valid image (JPEG, PNG, or WebP)');
-      return;
-    }
-    
-    if (file.size > MAX_FILE_SIZE) {
-      setPhotoError('Image must be less than 5MB');
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setPhotoPreview(reader.result as string);
-    };
-    reader.onerror = () => {
-      setPhotoError('Failed to read image file');
-    };
-    reader.readAsDataURL(file);
-  };
 
   const clearPhoto = () => {
     setPhotoPreview(null);
-    setPhotoError(null);
-    if (cameraInputRef.current) cameraInputRef.current.value = '';
   };
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -161,8 +128,6 @@ export function VisitorForm({ onSubmit }: VisitorFormProps) {
     setIsSubmitted(false);
     setCreatedVisitor(null);
     setPhotoPreview(null);
-    setPhotoError(null);
-    if (cameraInputRef.current) cameraInputRef.current.value = '';
   };
 
   if (isSubmitted && createdVisitor) {
@@ -444,50 +409,11 @@ export function VisitorForm({ onSubmit }: VisitorFormProps) {
             <Camera className="w-4 h-4 text-muted-foreground" />
             Photo (Optional)
           </Label>
-          <div className="flex items-center gap-4">
-            {photoPreview ? (
-              <div className="relative shrink-0">
-                <img 
-                  src={photoPreview} 
-                  alt="Visitor preview" 
-                  className="w-20 h-20 rounded-xl object-cover border border-border"
-                />
-                <button
-                  type="button"
-                  onClick={clearPhoto}
-                  className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center shadow-md hover:bg-destructive/90 transition-colors"
-                  aria-label="Remove photo"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => cameraInputRef.current?.click()}
-                className="w-20 h-20 shrink-0 rounded-xl border-2 border-dashed border-border hover:border-primary/50 flex flex-col items-center justify-center gap-1 cursor-pointer transition-colors bg-secondary/30"
-                aria-label="Capture photo"
-              >
-                <Camera className="w-6 h-6 text-muted-foreground" />
-                <span className="text-[10px] text-muted-foreground">Capture</span>
-              </button>
-            )}
-            <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" onChange={handlePhotoChange} className="hidden" aria-hidden="true" />
-            <div className="flex-1 space-y-1">
-              {photoPreview && (
-                <Button type="button" variant="outline" size="sm" onClick={() => cameraInputRef.current?.click()}>
-                  <Camera className="w-4 h-4 mr-1" />
-                  Retake
-                </Button>
-              )}
-              <p className="text-xs text-muted-foreground">
-                Tap to capture visitor photo (max 5MB)
-              </p>
-              {photoError && (
-                <p className="text-sm text-destructive">{photoError}</p>
-              )}
-            </div>
-          </div>
+          <CameraCapture
+            photoPreview={photoPreview}
+            onCapture={(dataUrl) => setPhotoPreview(dataUrl)}
+            onClear={clearPhoto}
+          />
         </div>
 
         <div className="space-y-2">
