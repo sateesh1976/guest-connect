@@ -73,42 +73,9 @@ export function VisitorForm({ onSubmit }: VisitorFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [createdVisitor, setCreatedVisitor] = useState<Visitor | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
-  const [photoError, setPhotoError] = useState<string | null>(null);
-  const cameraInputRef = useRef<HTMLInputElement>(null);
-
-  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-  const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
-
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    setPhotoError(null);
-    
-    if (!file) return;
-    
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      setPhotoError('Please upload a valid image (JPEG, PNG, or WebP)');
-      return;
-    }
-    
-    if (file.size > MAX_FILE_SIZE) {
-      setPhotoError('Image must be less than 5MB');
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setPhotoPreview(reader.result as string);
-    };
-    reader.onerror = () => {
-      setPhotoError('Failed to read image file');
-    };
-    reader.readAsDataURL(file);
-  };
 
   const clearPhoto = () => {
     setPhotoPreview(null);
-    setPhotoError(null);
-    if (cameraInputRef.current) cameraInputRef.current.value = '';
   };
 
   const form = useForm<z.infer<typeof formSchema>>({
