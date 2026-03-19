@@ -128,8 +128,6 @@ export function VisitorForm({ onSubmit }: VisitorFormProps) {
     setIsSubmitted(false);
     setCreatedVisitor(null);
     setPhotoPreview(null);
-    setPhotoError(null);
-    if (cameraInputRef.current) cameraInputRef.current.value = '';
   };
 
   if (isSubmitted && createdVisitor) {
