@@ -36,6 +36,7 @@ export interface VisitorFormData {
   visitorType?: string;
   flatNumber?: string;
   vehicleNumber?: string;
+  photoDataUrl?: string;
 }
 
 // Generate unique badge ID with timestamp component to minimize collisions
