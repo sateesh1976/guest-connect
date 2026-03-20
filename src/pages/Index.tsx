@@ -40,6 +40,7 @@ const Index = () => {
         visitorType: (result.visitor_type as Visitor['visitorType']) || 'guest',
         flatNumber: result.flat_number || undefined,
         vehicleNumber: result.vehicle_number || undefined,
+        photoUrl: result.photo_url || undefined,
       };
     }
 
