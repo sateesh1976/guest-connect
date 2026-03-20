@@ -176,6 +176,7 @@ export type Database = {
           host_name: string
           id: string
           phone_number: string
+          photo_url: string | null
           purpose: string
           status: string
           updated_at: string
@@ -196,6 +197,7 @@ export type Database = {
           host_name: string
           id?: string
           phone_number: string
+          photo_url?: string | null
           purpose: string
           status?: string
           updated_at?: string
@@ -216,6 +218,7 @@ export type Database = {
           host_name?: string
           id?: string
           phone_number?: string
+          photo_url?: string | null
           purpose?: string
           status?: string
           updated_at?: string
