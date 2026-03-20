@@ -22,6 +22,7 @@ export interface DBVisitor {
   visitor_type: string;
   flat_number: string | null;
   vehicle_number: string | null;
+  photo_url: string | null;
 }
 
 export interface VisitorFormData {
