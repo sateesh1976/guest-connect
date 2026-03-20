@@ -41,6 +41,7 @@ interface VisitorFormData {
   visitorType?: string;
   flatNumber?: string;
   vehicleNumber?: string;
+  photoDataUrl?: string;
 }
 
 const formSchema = z.object({
@@ -111,6 +112,7 @@ export function VisitorForm({ onSubmit }: VisitorFormProps) {
         visitorType: values.visitorType,
         flatNumber: values.flatNumber?.trim() || undefined,
         vehicleNumber: values.vehicleNumber?.trim() || undefined,
+        photoDataUrl: photoPreview || undefined,
       };
       const visitor = await onSubmit(formData);
       setCreatedVisitor(visitor);

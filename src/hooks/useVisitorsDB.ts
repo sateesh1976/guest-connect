@@ -22,6 +22,7 @@ export interface DBVisitor {
   visitor_type: string;
   flat_number: string | null;
   vehicle_number: string | null;
+  photo_url: string | null;
 }
 
 export interface VisitorFormData {
@@ -35,6 +36,7 @@ export interface VisitorFormData {
   visitorType?: string;
   flatNumber?: string;
   vehicleNumber?: string;
+  photoDataUrl?: string;
 }
 
 // Generate unique badge ID with timestamp component to minimize collisions
@@ -104,6 +106,32 @@ export function useVisitorsDB() {
     }
 
     const badgeId = generateBadgeId();
+    let photoUrl: string | null = null;
+
+    // Upload photo if provided
+    if (formData.photoDataUrl) {
+      try {
+        const response = await fetch(formData.photoDataUrl);
+        const blob = await response.blob();
+        const fileName = `${badgeId}-${Date.now()}.jpg`;
+
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('visitor-photos')
+          .upload(fileName, blob, { contentType: 'image/jpeg', upsert: false });
+
+        if (uploadError) {
+          console.error('Photo upload failed:', uploadError);
+          // Continue without photo — non-blocking
+        } else {
+          const { data: urlData } = supabase.storage
+            .from('visitor-photos')
+            .getPublicUrl(uploadData.path);
+          photoUrl = urlData.publicUrl;
+        }
+      } catch (err) {
+        console.error('Photo upload error:', err);
+      }
+    }
     
     try {
       const { data, error } = await supabase
@@ -121,6 +149,7 @@ export function useVisitorsDB() {
           visitor_type: formData.visitorType || 'guest',
           flat_number: formData.flatNumber?.trim() || null,
           vehicle_number: formData.vehicleNumber?.trim() || null,
+          photo_url: photoUrl,
         })
         .select()
         .single();

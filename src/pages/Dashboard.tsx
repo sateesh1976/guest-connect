@@ -38,6 +38,7 @@ const Dashboard = () => {
     visitorType: (dbVisitor.visitor_type as Visitor['visitorType']) || 'guest',
     flatNumber: dbVisitor.flat_number || undefined,
     vehicleNumber: dbVisitor.vehicle_number || undefined,
+    photoUrl: dbVisitor.photo_url || undefined,
   }), []);
 
   const visitorsList = useMemo(() => 
