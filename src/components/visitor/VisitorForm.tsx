@@ -41,6 +41,7 @@ interface VisitorFormData {
   visitorType?: string;
   flatNumber?: string;
   vehicleNumber?: string;
+  photoDataUrl?: string;
 }
 
 const formSchema = z.object({
