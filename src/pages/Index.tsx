@@ -1,10 +1,12 @@
 import { useCallback, useMemo } from 'react';
+import { Navigate } from 'react-router-dom';
 import { Users, Clock } from 'lucide-react';
 import { VisitorForm } from '@/components/visitor/VisitorForm';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { useVisitorsDB, VisitorFormData } from '@/hooks/useVisitorsDB';
 import { useKioskMode } from '@/hooks/useKioskMode';
 import { useAuth } from '@/contexts/AuthContext';
+import { useProduct } from '@/contexts/ProductContext';
 import { Visitor } from '@/types/visitor';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -12,6 +14,11 @@ const Index = () => {
   const { addVisitor, getCheckedInCount, getTodayVisitorCount, isLoading } = useVisitorsDB();
   const { checkInVisitor: kioskCheckIn } = useKioskMode();
   const { user, isStaff } = useAuth();
+  const { product } = useProduct();
+
+  if (!product) {
+    return <Navigate to="/select-product" replace />;
+  }
 
   const checkedInCount = useMemo(() => getCheckedInCount(), [getCheckedInCount]);
   const todayCount = useMemo(() => getTodayVisitorCount(), [getTodayVisitorCount]);
