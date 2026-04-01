@@ -11,17 +11,17 @@ import { Visitor } from '@/types/visitor';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const Index = () => {
+  const { product } = useProduct();
   const { addVisitor, getCheckedInCount, getTodayVisitorCount, isLoading } = useVisitorsDB();
   const { checkInVisitor: kioskCheckIn } = useKioskMode();
   const { user, isStaff } = useAuth();
-  const { product } = useProduct();
+
+  const checkedInCount = useMemo(() => getCheckedInCount(), [getCheckedInCount]);
+  const todayCount = useMemo(() => getTodayVisitorCount(), [getTodayVisitorCount]);
 
   if (!product) {
     return <Navigate to="/select-product" replace />;
   }
-
-  const checkedInCount = useMemo(() => getCheckedInCount(), [getCheckedInCount]);
-  const todayCount = useMemo(() => getTodayVisitorCount(), [getTodayVisitorCount]);
 
   const handleAddVisitor = useCallback(async (data: VisitorFormData): Promise<Visitor> => {
     if (!user || !isStaff) {
