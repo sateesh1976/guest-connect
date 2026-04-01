@@ -10,10 +10,13 @@ import {
   LogOut,
   Shield,
   UserCog,
-  CalendarPlus
+  CalendarPlus,
+  Home,
+  ArrowLeftRight
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
+import { useProduct } from '@/contexts/ProductContext';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -32,11 +35,15 @@ export function AppLayout({ children }: AppLayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, userRole, isAdmin, signOut } = useAuth();
+  const { product, productLabel, clearProduct } = useProduct();
 
   const navItems = [
     { path: '/', label: 'Visitor Check-in', shortLabel: 'Check-in', icon: LogIn, requireAuth: false },
     { path: '/dashboard', label: 'Dashboard', shortLabel: 'Dashboard', icon: ClipboardList, requireAuth: true },
     { path: '/pre-registration', label: 'Pre-Register', shortLabel: 'Pre-Reg', icon: CalendarPlus, requireAuth: true },
+    ...(product === 'society' ? [
+      { path: '/members', label: 'Members', shortLabel: 'Members', icon: Home, requireAuth: true },
+    ] : []),
     { path: '/reports', label: 'Reports', shortLabel: 'Reports', icon: BarChart3, requireAuth: true },
     ...(isAdmin ? [
       { path: '/users', label: 'Users', shortLabel: 'Users', icon: UserCog, requireAuth: true },
@@ -61,11 +68,15 @@ export function AppLayout({ children }: AppLayoutProps) {
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
-              <Building2 className="w-5 h-5 text-primary-foreground" />
+              {product === 'society' ? (
+                <Home className="w-5 h-5 text-primary-foreground" />
+              ) : (
+                <Building2 className="w-5 h-5 text-primary-foreground" />
+              )}
             </div>
             <div>
               <h1 className="text-lg font-semibold text-foreground">VisitorHub</h1>
-              <p className="text-xs text-muted-foreground">Visitor Management</p>
+              <p className="text-xs text-muted-foreground">{productLabel || 'Visitor Management'}</p>
             </div>
           </Link>
 
@@ -118,6 +129,13 @@ export function AppLayout({ children }: AppLayoutProps) {
                     <p className="text-xs text-muted-foreground capitalize">{userRole}</p>
                   </div>
                   <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => {
+                    clearProduct();
+                    navigate('/select-product');
+                  }}>
+                    <ArrowLeftRight className="w-4 h-4 mr-2" />
+                    Switch Product
+                  </DropdownMenuItem>
                   {isAdmin && (
                     <DropdownMenuItem onClick={() => navigate('/settings')}>
                       <Settings className="w-4 h-4 mr-2" />

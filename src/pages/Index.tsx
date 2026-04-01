@@ -1,14 +1,17 @@
 import { useCallback, useMemo } from 'react';
+import { Navigate } from 'react-router-dom';
 import { Users, Clock } from 'lucide-react';
 import { VisitorForm } from '@/components/visitor/VisitorForm';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { useVisitorsDB, VisitorFormData } from '@/hooks/useVisitorsDB';
 import { useKioskMode } from '@/hooks/useKioskMode';
 import { useAuth } from '@/contexts/AuthContext';
+import { useProduct } from '@/contexts/ProductContext';
 import { Visitor } from '@/types/visitor';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const Index = () => {
+  const { product } = useProduct();
   const { addVisitor, getCheckedInCount, getTodayVisitorCount, isLoading } = useVisitorsDB();
   const { checkInVisitor: kioskCheckIn } = useKioskMode();
   const { user, isStaff } = useAuth();
@@ -47,6 +50,10 @@ const Index = () => {
     return kioskCheckIn(data);
   }, [user, isStaff, addVisitor, kioskCheckIn]);
 
+  if (!product) {
+    return <Navigate to="/select-product" replace />;
+  }
+
   return (
     <AppLayout>
       <div className="max-w-2xl mx-auto">
@@ -56,7 +63,7 @@ const Index = () => {
             Welcome to VisitorHub
           </h1>
           <p className="text-muted-foreground text-lg">
-            Please complete the check-in form below
+            {product === 'society' ? 'Society visitor check-in' : 'Please complete the check-in form below'}
           </p>
         </div>
 

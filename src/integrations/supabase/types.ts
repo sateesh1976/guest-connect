@@ -140,6 +140,54 @@ export type Database = {
         }
         Relationships: []
       }
+      society_members: {
+        Row: {
+          cluster_name: string | null
+          contact_number: string | null
+          created_at: string
+          email_address: string | null
+          flat_no: string
+          id: string
+          member_id: string
+          member_name: string
+          ownership_type: string
+          role: string | null
+          updated_at: string
+          validity: string | null
+          wing: string | null
+        }
+        Insert: {
+          cluster_name?: string | null
+          contact_number?: string | null
+          created_at?: string
+          email_address?: string | null
+          flat_no: string
+          id?: string
+          member_id: string
+          member_name: string
+          ownership_type?: string
+          role?: string | null
+          updated_at?: string
+          validity?: string | null
+          wing?: string | null
+        }
+        Update: {
+          cluster_name?: string | null
+          contact_number?: string | null
+          created_at?: string
+          email_address?: string | null
+          flat_no?: string
+          id?: string
+          member_id?: string
+          member_name?: string
+          ownership_type?: string
+          role?: string | null
+          updated_at?: string
+          validity?: string | null
+          wing?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -177,6 +225,7 @@ export type Database = {
           id: string
           phone_number: string
           photo_url: string | null
+          product_type: string
           purpose: string
           status: string
           updated_at: string
@@ -198,6 +247,7 @@ export type Database = {
           id?: string
           phone_number: string
           photo_url?: string | null
+          product_type?: string
           purpose: string
           status?: string
           updated_at?: string
@@ -219,6 +269,7 @@ export type Database = {
           id?: string
           phone_number?: string
           photo_url?: string | null
+          product_type?: string
           purpose?: string
           status?: string
           updated_at?: string

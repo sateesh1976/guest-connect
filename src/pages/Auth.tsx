@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
+import { useProduct } from '@/contexts/ProductContext';
 
 const loginSchema = z.object({
   email: z.string().trim().email('Please enter a valid email').max(255),
@@ -41,6 +42,7 @@ export default function Auth() {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user, signIn, signUp } = useAuth();
+  const { product, productLabel } = useProduct();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -156,6 +158,9 @@ export default function Auth() {
             <Building2 className="w-8 h-8 text-primary-foreground" />
           </div>
           <h1 className="text-2xl font-semibold text-foreground">VisitorHub</h1>
+          {productLabel && (
+            <p className="text-sm font-medium text-primary mt-1">{productLabel}</p>
+          )}
           <p className="text-muted-foreground mt-2">
             {isForgotPassword 
               ? 'Reset your password' 

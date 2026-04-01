@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useProduct } from '@/contexts/ProductContext';
 import { useToast } from '@/hooks/use-toast';
 
 export interface DBVisitor {
@@ -53,6 +54,7 @@ export function useVisitorsDB() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
+  const { product } = useProduct();
   const { toast } = useToast();
 
   const fetchVisitors = useCallback(async () => {
@@ -66,11 +68,18 @@ export function useVisitorsDB() {
     setError(null);
     
     try {
-      const { data, error: fetchError } = await supabase
+      const query = supabase
         .from('visitors')
         .select('*')
         .order('check_in_time', { ascending: false })
         .limit(500);
+
+      // Filter by product_type if set
+      if (product) {
+        query.eq('product_type', product);
+      }
+
+      const { data, error: fetchError } = await query;
 
       if (fetchError) {
         console.error('Error fetching visitors:', fetchError);
@@ -89,7 +98,7 @@ export function useVisitorsDB() {
     } finally {
       setIsLoading(false);
     }
-  }, [user, toast]);
+  }, [user, product, toast]);
 
   useEffect(() => {
     fetchVisitors();
@@ -150,7 +159,8 @@ export function useVisitorsDB() {
           flat_number: formData.flatNumber?.trim() || null,
           vehicle_number: formData.vehicleNumber?.trim() || null,
           photo_url: photoUrl,
-        })
+          product_type: product || 'office',
+        } as any)
         .select()
         .single();
 
