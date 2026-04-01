@@ -21,12 +21,12 @@ const MemberDirectory = () => {
   const [wingFilter, setWingFilter] = useState<string>('all');
 
   const clusters = useMemo(() => {
-    const set = new Set(members.map(m => m.cluster_name).filter(Boolean));
+    const set = new Set(members.map(m => m.cluster_name).filter(Boolean) as string[]);
     return Array.from(set).sort();
   }, [members]);
 
   const wings = useMemo(() => {
-    const set = new Set(members.map(m => m.wing).filter(Boolean));
+    const set = new Set(members.map(m => m.wing).filter(Boolean) as string[]);
     return Array.from(set).sort();
   }, [members]);
 

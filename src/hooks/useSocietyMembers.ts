@@ -29,13 +29,13 @@ export function useSocietyMembers() {
     }
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('society_members')
         .select('*')
         .order('member_id', { ascending: true });
 
       if (!error && data) {
-        setMembers(data as SocietyMember[]);
+        setMembers(data as unknown as SocietyMember[]);
       }
     } catch (err) {
       console.error('Error fetching society members:', err);
