@@ -10,10 +10,13 @@ import {
   LogOut,
   Shield,
   UserCog,
-  CalendarPlus
+  CalendarPlus,
+  Home,
+  ArrowLeftRight
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
+import { useProduct } from '@/contexts/ProductContext';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
