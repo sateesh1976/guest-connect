@@ -41,6 +41,9 @@ export function AppLayout({ children }: AppLayoutProps) {
     { path: '/', label: 'Visitor Check-in', shortLabel: 'Check-in', icon: LogIn, requireAuth: false },
     { path: '/dashboard', label: 'Dashboard', shortLabel: 'Dashboard', icon: ClipboardList, requireAuth: true },
     { path: '/pre-registration', label: 'Pre-Register', shortLabel: 'Pre-Reg', icon: CalendarPlus, requireAuth: true },
+    ...(product === 'society' ? [
+      { path: '/members', label: 'Members', shortLabel: 'Members', icon: Home, requireAuth: true },
+    ] : []),
     { path: '/reports', label: 'Reports', shortLabel: 'Reports', icon: BarChart3, requireAuth: true },
     ...(isAdmin ? [
       { path: '/users', label: 'Users', shortLabel: 'Users', icon: UserCog, requireAuth: true },
