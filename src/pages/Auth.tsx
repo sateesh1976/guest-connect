@@ -42,6 +42,7 @@ export default function Auth() {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user, signIn, signUp } = useAuth();
+  const { product, productLabel } = useProduct();
   const navigate = useNavigate();
 
   useEffect(() => {
