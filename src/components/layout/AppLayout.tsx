@@ -68,11 +68,15 @@ export function AppLayout({ children }: AppLayoutProps) {
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
-              <Building2 className="w-5 h-5 text-primary-foreground" />
+              {product === 'society' ? (
+                <Home className="w-5 h-5 text-primary-foreground" />
+              ) : (
+                <Building2 className="w-5 h-5 text-primary-foreground" />
+              )}
             </div>
             <div>
               <h1 className="text-lg font-semibold text-foreground">VisitorHub</h1>
-              <p className="text-xs text-muted-foreground">Visitor Management</p>
+              <p className="text-xs text-muted-foreground">{productLabel || 'Visitor Management'}</p>
             </div>
           </Link>
 
