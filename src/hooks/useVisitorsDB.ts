@@ -159,7 +159,8 @@ export function useVisitorsDB() {
           flat_number: formData.flatNumber?.trim() || null,
           vehicle_number: formData.vehicleNumber?.trim() || null,
           photo_url: photoUrl,
-        })
+          product_type: product || 'office',
+        } as any)
         .select()
         .single();
 
