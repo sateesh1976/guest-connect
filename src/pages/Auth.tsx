@@ -158,6 +158,9 @@ export default function Auth() {
             <Building2 className="w-8 h-8 text-primary-foreground" />
           </div>
           <h1 className="text-2xl font-semibold text-foreground">VisitorHub</h1>
+          {productLabel && (
+            <p className="text-sm font-medium text-primary mt-1">{productLabel}</p>
+          )}
           <p className="text-muted-foreground mt-2">
             {isForgotPassword 
               ? 'Reset your password' 
