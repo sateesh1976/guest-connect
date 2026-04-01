@@ -68,11 +68,18 @@ export function useVisitorsDB() {
     setError(null);
     
     try {
-      const { data, error: fetchError } = await supabase
+      const query = supabase
         .from('visitors')
         .select('*')
         .order('check_in_time', { ascending: false })
         .limit(500);
+
+      // Filter by product_type if set
+      if (product) {
+        query.eq('product_type', product);
+      }
+
+      const { data, error: fetchError } = await query;
 
       if (fetchError) {
         console.error('Error fetching visitors:', fetchError);
