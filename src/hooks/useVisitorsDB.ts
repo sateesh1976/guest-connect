@@ -98,7 +98,7 @@ export function useVisitorsDB() {
     } finally {
       setIsLoading(false);
     }
-  }, [user, toast]);
+  }, [user, product, toast]);
 
   useEffect(() => {
     fetchVisitors();
