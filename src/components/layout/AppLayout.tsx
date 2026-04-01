@@ -35,6 +35,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, userRole, isAdmin, signOut } = useAuth();
+  const { product, productLabel, clearProduct } = useProduct();
 
   const navItems = [
     { path: '/', label: 'Visitor Check-in', shortLabel: 'Check-in', icon: LogIn, requireAuth: false },
