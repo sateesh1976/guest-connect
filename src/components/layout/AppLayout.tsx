@@ -129,6 +129,13 @@ export function AppLayout({ children }: AppLayoutProps) {
                     <p className="text-xs text-muted-foreground capitalize">{userRole}</p>
                   </div>
                   <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => {
+                    clearProduct();
+                    navigate('/select-product');
+                  }}>
+                    <ArrowLeftRight className="w-4 h-4 mr-2" />
+                    Switch Product
+                  </DropdownMenuItem>
                   {isAdmin && (
                     <DropdownMenuItem onClick={() => navigate('/settings')}>
                       <Settings className="w-4 h-4 mr-2" />
