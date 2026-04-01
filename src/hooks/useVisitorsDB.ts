@@ -54,6 +54,7 @@ export function useVisitorsDB() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
+  const { product } = useProduct();
   const { toast } = useToast();
 
   const fetchVisitors = useCallback(async () => {
