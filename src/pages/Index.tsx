@@ -19,10 +19,6 @@ const Index = () => {
   const checkedInCount = useMemo(() => getCheckedInCount(), [getCheckedInCount]);
   const todayCount = useMemo(() => getTodayVisitorCount(), [getTodayVisitorCount]);
 
-  if (!product) {
-    return <Navigate to="/select-product" replace />;
-  }
-
   const handleAddVisitor = useCallback(async (data: VisitorFormData): Promise<Visitor> => {
     if (!user || !isStaff) {
       return kioskCheckIn(data);
