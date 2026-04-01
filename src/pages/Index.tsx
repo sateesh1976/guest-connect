@@ -50,6 +50,10 @@ const Index = () => {
     return kioskCheckIn(data);
   }, [user, isStaff, addVisitor, kioskCheckIn]);
 
+  if (!product) {
+    return <Navigate to="/select-product" replace />;
+  }
+
   return (
     <AppLayout>
       <div className="max-w-2xl mx-auto">
@@ -59,7 +63,7 @@ const Index = () => {
             Welcome to VisitorHub
           </h1>
           <p className="text-muted-foreground text-lg">
-            Please complete the check-in form below
+            {product === 'society' ? 'Society visitor check-in' : 'Please complete the check-in form below'}
           </p>
         </div>
 
