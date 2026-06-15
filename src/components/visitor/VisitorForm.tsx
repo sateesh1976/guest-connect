@@ -438,17 +438,55 @@ export function VisitorForm({ onSubmit }: VisitorFormProps) {
             )}
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2 relative">
             <Label htmlFor="hostName" className="flex items-center gap-2">
               <UserCheck className="w-4 h-4 text-muted-foreground" />
               Person to Visit *
             </Label>
             <Input 
               id="hostName"
-              placeholder="Resident / Host name" 
+              placeholder={isSociety ? 'Type resident name or flat…' : 'Resident / Host name'}
               className="input-focus"
-              {...form.register('hostName')}
+              autoComplete="off"
+              {...form.register('hostName', {
+                onChange: (e) => {
+                  setHostQuery(e.target.value);
+                  setShowHostSuggest(true);
+                },
+              })}
+              onFocus={() => setShowHostSuggest(true)}
+              onBlur={() => setTimeout(() => setShowHostSuggest(false), 150)}
             />
+            {isSociety && showHostSuggest && hostSuggestions.length > 0 && (
+              <ul
+                role="listbox"
+                className="absolute z-20 left-0 right-0 mt-1 bg-popover border border-border rounded-lg shadow-lg max-h-64 overflow-auto"
+              >
+                {hostSuggestions.map((m) => (
+                  <li key={`host-${m.id}`}>
+                    <button
+                      type="button"
+                      className="w-full text-left px-3 py-2 hover:bg-accent hover:text-accent-foreground text-sm"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        form.setValue('hostName', m.member_name, { shouldValidate: true });
+                        if (m.flat_no) {
+                          form.setValue('flatNumber', m.flat_no, { shouldValidate: true });
+                        }
+                        if (m.email_address && !form.getValues('hostEmail')) {
+                          form.setValue('hostEmail', m.email_address, { shouldValidate: true });
+                        }
+                        setHostQuery(m.member_name);
+                        setShowHostSuggest(false);
+                      }}
+                    >
+                      <span className="font-medium">{m.member_name}</span>
+                      <span className="text-muted-foreground"> — {m.flat_no}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
             {form.formState.errors.hostName && (
               <p className="text-sm text-destructive">{form.formState.errors.hostName.message}</p>
             )}
