@@ -336,7 +336,7 @@ export function VisitorForm({ onSubmit }: VisitorFormProps) {
             )}
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2 relative">
             <Label htmlFor="flatNumber" className="flex items-center gap-2">
               <Home className="w-4 h-4 text-muted-foreground" />
               Flat / Unit No.
@@ -345,8 +345,43 @@ export function VisitorForm({ onSubmit }: VisitorFormProps) {
               id="flatNumber"
               placeholder="A-101, B-202" 
               className="input-focus"
-              {...form.register('flatNumber')}
+              autoComplete="off"
+              {...form.register('flatNumber', {
+                onChange: (e) => {
+                  setFlatQuery(e.target.value);
+                  setShowFlatSuggest(true);
+                },
+              })}
+              onFocus={() => setShowFlatSuggest(true)}
+              onBlur={() => setTimeout(() => setShowFlatSuggest(false), 150)}
             />
+            {isSociety && showFlatSuggest && flatSuggestions.length > 0 && (
+              <ul
+                role="listbox"
+                className="absolute z-20 left-0 right-0 mt-1 bg-popover border border-border rounded-lg shadow-lg max-h-64 overflow-auto"
+              >
+                {flatSuggestions.map((m) => (
+                  <li key={`flat-${m.id}`}>
+                    <button
+                      type="button"
+                      className="w-full text-left px-3 py-2 hover:bg-accent hover:text-accent-foreground text-sm"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        form.setValue('flatNumber', m.flat_no, { shouldValidate: true });
+                        if (!form.getValues('hostName')) {
+                          form.setValue('hostName', m.member_name, { shouldValidate: true });
+                        }
+                        setFlatQuery(m.flat_no);
+                        setShowFlatSuggest(false);
+                      }}
+                    >
+                      <span className="font-medium">{m.flat_no}</span>
+                      <span className="text-muted-foreground"> — {m.member_name}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
             {form.formState.errors.flatNumber && (
               <p className="text-sm text-destructive">{form.formState.errors.flatNumber.message}</p>
             )}
