@@ -76,6 +76,36 @@ export function VisitorForm({ onSubmit }: VisitorFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [createdVisitor, setCreatedVisitor] = useState<Visitor | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [hostQuery, setHostQuery] = useState('');
+  const [flatQuery, setFlatQuery] = useState('');
+  const [showHostSuggest, setShowHostSuggest] = useState(false);
+  const [showFlatSuggest, setShowFlatSuggest] = useState(false);
+
+  const { product } = useProduct();
+  const isSociety = product === 'society';
+  const { members } = useSocietyMembers();
+
+  const hostSuggestions = useMemo(() => {
+    if (!isSociety || !hostQuery || hostQuery.length < 2) return [];
+    const q = hostQuery.toLowerCase();
+    return members
+      .filter((m) => m.member_name?.toLowerCase().includes(q) || m.flat_no?.toLowerCase().includes(q))
+      .slice(0, 6);
+  }, [isSociety, hostQuery, members]);
+
+  const flatSuggestions = useMemo(() => {
+    if (!isSociety || !flatQuery || flatQuery.length < 1) return [];
+    const q = flatQuery.toLowerCase();
+    const seen = new Set<string>();
+    return members
+      .filter((m) => {
+        if (!m.flat_no || !m.flat_no.toLowerCase().includes(q)) return false;
+        if (seen.has(m.flat_no)) return false;
+        seen.add(m.flat_no);
+        return true;
+      })
+      .slice(0, 6);
+  }, [isSociety, flatQuery, members]);
 
   const clearPhoto = () => {
     setPhotoPreview(null);
