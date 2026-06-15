@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -29,6 +29,8 @@ import { VisitorQRCode } from './VisitorQRCode';
 import { CameraCapture } from './CameraCapture';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { useProduct } from '@/contexts/ProductContext';
+import { useSocietyMembers } from '@/hooks/useSocietyMembers';
 
 interface VisitorFormData {
   fullName: string;
