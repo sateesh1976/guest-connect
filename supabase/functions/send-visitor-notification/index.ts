@@ -190,14 +190,22 @@ serve(async (req) => {
 
     const results = await Promise.allSettled(
       activeWebhooks.map(async (webhook) => {
+        if (!isSafeWebhookUrl(webhook.webhook_url)) {
+          console.error(`Blocked unsafe webhook URL for "${webhook.name}"`);
+          throw new Error(
+            `Webhook ${webhook.name} blocked: URL must be HTTPS and on the allowlist (Slack/Teams).`
+          );
+        }
+
         const message = formatMessage(safeVisitor, eventType, webhook.webhook_type);
-        
+
         console.log(`Sending ${webhook.webhook_type} notification to ${webhook.name}`);
-        
+
         const response = await fetch(webhook.webhook_url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(message),
+          redirect: 'error', // prevent redirect-based SSRF bypass
         });
 
         if (!response.ok) {
