@@ -40,6 +40,41 @@ function escapeText(unsafe: string | null | undefined): string {
     .substring(0, 500);
 }
 
+// SSRF guard: only allow HTTPS calls to known notification providers.
+// Blocks private/internal ranges and cloud metadata endpoints regardless of the allowlist.
+const WEBHOOK_HOST_ALLOWLIST = [
+  'hooks.slack.com',
+  'outlook.office.com',
+  'outlook.office365.com',
+  'webhook.office.com',
+];
+
+function isSafeWebhookUrl(rawUrl: string): boolean {
+  let parsed: URL;
+  try {
+    parsed = new URL(rawUrl);
+  } catch {
+    return false;
+  }
+  if (parsed.protocol !== 'https:') return false;
+
+  const hostname = parsed.hostname.toLowerCase();
+
+  // Block IP literals entirely — webhooks should always use a hostname.
+  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(hostname)) return false;
+  if (hostname.includes(':')) return false; // IPv6 literal
+  // Block localhost and metadata aliases.
+  const blockedHosts = ['localhost', 'metadata.google.internal', 'metadata.goog'];
+  if (blockedHosts.includes(hostname)) return false;
+  if (hostname.endsWith('.local') || hostname.endsWith('.internal')) return false;
+
+  // Must match the explicit allowlist of notification providers.
+  return WEBHOOK_HOST_ALLOWLIST.some(
+    (allowed) => hostname === allowed || hostname.endsWith(`.${allowed}`)
+  );
+}
+
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -155,14 +190,22 @@ serve(async (req) => {
 
     const results = await Promise.allSettled(
       activeWebhooks.map(async (webhook) => {
+        if (!isSafeWebhookUrl(webhook.webhook_url)) {
+          console.error(`Blocked unsafe webhook URL for "${webhook.name}"`);
+          throw new Error(
+            `Webhook ${webhook.name} blocked: URL must be HTTPS and on the allowlist (Slack/Teams).`
+          );
+        }
+
         const message = formatMessage(safeVisitor, eventType, webhook.webhook_type);
-        
+
         console.log(`Sending ${webhook.webhook_type} notification to ${webhook.name}`);
-        
+
         const response = await fetch(webhook.webhook_url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(message),
+          redirect: 'error', // prevent redirect-based SSRF bypass
         });
 
         if (!response.ok) {

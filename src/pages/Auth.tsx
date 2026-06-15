@@ -414,8 +414,8 @@ export default function Auth() {
           {!isLogin && (
             <div className="mt-4 p-3 bg-secondary/50 rounded-lg">
               <p className="text-xs text-muted-foreground text-center">
-                The first user to sign up will automatically become an admin. 
-                Subsequent users will be assigned the receptionist role.
+                The first user to sign up automatically becomes the admin.
+                Subsequent signups have no staff access until an admin promotes them.
               </p>
             </div>
           )}
