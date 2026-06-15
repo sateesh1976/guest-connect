@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -29,6 +29,8 @@ import { VisitorQRCode } from './VisitorQRCode';
 import { CameraCapture } from './CameraCapture';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { useProduct } from '@/contexts/ProductContext';
+import { useSocietyMembers } from '@/hooks/useSocietyMembers';
 
 interface VisitorFormData {
   fullName: string;
@@ -74,6 +76,36 @@ export function VisitorForm({ onSubmit }: VisitorFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [createdVisitor, setCreatedVisitor] = useState<Visitor | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [hostQuery, setHostQuery] = useState('');
+  const [flatQuery, setFlatQuery] = useState('');
+  const [showHostSuggest, setShowHostSuggest] = useState(false);
+  const [showFlatSuggest, setShowFlatSuggest] = useState(false);
+
+  const { product } = useProduct();
+  const isSociety = product === 'society';
+  const { members } = useSocietyMembers();
+
+  const hostSuggestions = useMemo(() => {
+    if (!isSociety || !hostQuery || hostQuery.length < 2) return [];
+    const q = hostQuery.toLowerCase();
+    return members
+      .filter((m) => m.member_name?.toLowerCase().includes(q) || m.flat_no?.toLowerCase().includes(q))
+      .slice(0, 6);
+  }, [isSociety, hostQuery, members]);
+
+  const flatSuggestions = useMemo(() => {
+    if (!isSociety || !flatQuery || flatQuery.length < 1) return [];
+    const q = flatQuery.toLowerCase();
+    const seen = new Set<string>();
+    return members
+      .filter((m) => {
+        if (!m.flat_no || !m.flat_no.toLowerCase().includes(q)) return false;
+        if (seen.has(m.flat_no)) return false;
+        seen.add(m.flat_no);
+        return true;
+      })
+      .slice(0, 6);
+  }, [isSociety, flatQuery, members]);
 
   const clearPhoto = () => {
     setPhotoPreview(null);
@@ -304,7 +336,7 @@ export function VisitorForm({ onSubmit }: VisitorFormProps) {
             )}
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2 relative">
             <Label htmlFor="flatNumber" className="flex items-center gap-2">
               <Home className="w-4 h-4 text-muted-foreground" />
               Flat / Unit No.
@@ -313,8 +345,43 @@ export function VisitorForm({ onSubmit }: VisitorFormProps) {
               id="flatNumber"
               placeholder="A-101, B-202" 
               className="input-focus"
-              {...form.register('flatNumber')}
+              autoComplete="off"
+              {...form.register('flatNumber', {
+                onChange: (e) => {
+                  setFlatQuery(e.target.value);
+                  setShowFlatSuggest(true);
+                },
+              })}
+              onFocus={() => setShowFlatSuggest(true)}
+              onBlur={() => setTimeout(() => setShowFlatSuggest(false), 150)}
             />
+            {isSociety && showFlatSuggest && flatSuggestions.length > 0 && (
+              <ul
+                role="listbox"
+                className="absolute z-20 left-0 right-0 mt-1 bg-popover border border-border rounded-lg shadow-lg max-h-64 overflow-auto"
+              >
+                {flatSuggestions.map((m) => (
+                  <li key={`flat-${m.id}`}>
+                    <button
+                      type="button"
+                      className="w-full text-left px-3 py-2 hover:bg-accent hover:text-accent-foreground text-sm"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        form.setValue('flatNumber', m.flat_no, { shouldValidate: true });
+                        if (!form.getValues('hostName')) {
+                          form.setValue('hostName', m.member_name, { shouldValidate: true });
+                        }
+                        setFlatQuery(m.flat_no);
+                        setShowFlatSuggest(false);
+                      }}
+                    >
+                      <span className="font-medium">{m.flat_no}</span>
+                      <span className="text-muted-foreground"> — {m.member_name}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
             {form.formState.errors.flatNumber && (
               <p className="text-sm text-destructive">{form.formState.errors.flatNumber.message}</p>
             )}
@@ -371,17 +438,55 @@ export function VisitorForm({ onSubmit }: VisitorFormProps) {
             )}
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2 relative">
             <Label htmlFor="hostName" className="flex items-center gap-2">
               <UserCheck className="w-4 h-4 text-muted-foreground" />
               Person to Visit *
             </Label>
             <Input 
               id="hostName"
-              placeholder="Resident / Host name" 
+              placeholder={isSociety ? 'Type resident name or flat…' : 'Resident / Host name'}
               className="input-focus"
-              {...form.register('hostName')}
+              autoComplete="off"
+              {...form.register('hostName', {
+                onChange: (e) => {
+                  setHostQuery(e.target.value);
+                  setShowHostSuggest(true);
+                },
+              })}
+              onFocus={() => setShowHostSuggest(true)}
+              onBlur={() => setTimeout(() => setShowHostSuggest(false), 150)}
             />
+            {isSociety && showHostSuggest && hostSuggestions.length > 0 && (
+              <ul
+                role="listbox"
+                className="absolute z-20 left-0 right-0 mt-1 bg-popover border border-border rounded-lg shadow-lg max-h-64 overflow-auto"
+              >
+                {hostSuggestions.map((m) => (
+                  <li key={`host-${m.id}`}>
+                    <button
+                      type="button"
+                      className="w-full text-left px-3 py-2 hover:bg-accent hover:text-accent-foreground text-sm"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        form.setValue('hostName', m.member_name, { shouldValidate: true });
+                        if (m.flat_no) {
+                          form.setValue('flatNumber', m.flat_no, { shouldValidate: true });
+                        }
+                        if (m.email_address && !form.getValues('hostEmail')) {
+                          form.setValue('hostEmail', m.email_address, { shouldValidate: true });
+                        }
+                        setHostQuery(m.member_name);
+                        setShowHostSuggest(false);
+                      }}
+                    >
+                      <span className="font-medium">{m.member_name}</span>
+                      <span className="text-muted-foreground"> — {m.flat_no}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
             {form.formState.errors.hostName && (
               <p className="text-sm text-destructive">{form.formState.errors.hostName.message}</p>
             )}
