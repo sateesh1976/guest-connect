@@ -104,6 +104,39 @@ export function useVisitorsDB() {
     fetchVisitors();
   }, [fetchVisitors]);
 
+  // Realtime subscription — auto-sync dashboard when visitors change
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('visitors-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'visitors' },
+        (payload) => {
+          const isRelevant = (row: any) => !product || row?.product_type === product;
+
+          if (payload.eventType === 'INSERT' && isRelevant(payload.new)) {
+            const incoming = payload.new as DBVisitor;
+            setVisitors((prev) =>
+              prev.some((v) => v.id === incoming.id) ? prev : [incoming, ...prev]
+            );
+          } else if (payload.eventType === 'UPDATE' && isRelevant(payload.new)) {
+            const updated = payload.new as DBVisitor;
+            setVisitors((prev) => prev.map((v) => (v.id === updated.id ? updated : v)));
+          } else if (payload.eventType === 'DELETE') {
+            const removed = payload.old as DBVisitor;
+            setVisitors((prev) => prev.filter((v) => v.id !== removed.id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, product]);
+
   const addVisitor = async (formData: VisitorFormData): Promise<DBVisitor | null> => {
     if (!user) {
       toast({
