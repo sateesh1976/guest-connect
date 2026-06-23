@@ -135,26 +135,33 @@ serve(async (req) => {
       );
     }
 
-    const { visitor, eventType } = await req.json() as { visitor: Visitor; eventType: 'checkin' | 'checkout' };
+    const { visitor: visitorInput, eventType } = await req.json() as { visitor: { id?: string }; eventType: 'checkin' | 'checkout' };
 
+    // SECURITY: require visitor.id; only DB-sourced fields are used downstream.
+    if (!visitorInput?.id) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'visitor.id is required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const { data: visitorRow, error: visitorError } = await supabaseAdmin
+      .from('visitors')
+      .select('id, badge_id, full_name, phone_number, email, company_name, host_name, host_email, purpose, check_in_time, check_out_time, status')
+      .eq('id', visitorInput.id)
+      .maybeSingle();
+
+    if (visitorError || !visitorRow) {
+      console.error("Visitor not found:", visitorError);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Visitor not found' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const visitor = visitorRow as Visitor;
     console.log(`Processing ${eventType} notification for visitor:`, visitor.full_name);
 
-    // Validate visitor exists in database using service role
-    if (visitor.id) {
-      const { data: visitorData, error: visitorError } = await supabaseAdmin
-        .from('visitors')
-        .select('id')
-        .eq('id', visitor.id)
-        .maybeSingle();
-
-      if (visitorError || !visitorData) {
-        console.error("Visitor not found:", visitorError);
-        return new Response(
-          JSON.stringify({ success: false, error: 'Visitor not found' }),
-          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-    }
 
     // Fetch active webhooks using service role
     const { data: webhooks, error: webhookError } = await supabaseAdmin

@@ -134,28 +134,35 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const { visitor, eventType }: EmailRequest = await req.json();
-    console.log(`Processing ${eventType} email for visitor:`, visitor.full_name);
+    const { visitor: visitorInput, eventType }: EmailRequest = await req.json();
 
-    // Validate visitor data exists if ID provided
-    if (visitor.id) {
-      const { data: visitorData, error: visitorError } = await supabaseAdmin
-        .from('visitors')
-        .select('id')
-        .eq('id', visitor.id)
-        .maybeSingle();
-
-      if (visitorError || !visitorData) {
-        console.error("Visitor not found:", visitorError);
-        return new Response(
-          JSON.stringify({ success: false, error: 'Visitor not found' }),
-          { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } }
-        );
-      }
+    // SECURITY: require visitor.id and use ONLY DB-sourced fields for recipients/content.
+    if (!visitorInput?.id) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'visitor.id is required' }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
     }
 
+    const { data: visitorRow, error: visitorError } = await supabaseAdmin
+      .from('visitors')
+      .select('id, full_name, email, company_name, host_name, host_email, purpose, badge_id, check_in_time')
+      .eq('id', visitorInput.id)
+      .maybeSingle();
+
+    if (visitorError || !visitorRow) {
+      console.error("Visitor not found:", visitorError);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Visitor not found' }),
+        { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    const visitor: Visitor = visitorRow as Visitor;
+    console.log(`Processing ${eventType} email for visitor:`, visitor.full_name);
+
     if (!visitor.email) {
-      console.log("No visitor email provided, skipping visitor notification");
+      console.log("No visitor email on record, skipping visitor notification");
     }
 
     const results: { type: string; success: boolean; error?: string }[] = [];
@@ -170,6 +177,7 @@ const handler = async (req: Request): Promise<Response> => {
       purpose: escapeHtml(visitor.purpose),
       badge_id: escapeHtml(visitor.badge_id),
     };
+
 
     // Send confirmation email to visitor
     if (visitor.email && eventType === 'checkin') {
