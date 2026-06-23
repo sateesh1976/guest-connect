@@ -7,7 +7,9 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProductProvider } from "@/contexts/ProductContext";
 import { ProtectedRoute } from "@/components/layout/ProtectedRoute";
+import { ErrorBoundary } from "@/components/layout/ErrorBoundary";
 import { LoadingPage } from "@/components/ui/loading-spinner";
+
 
 // Lazy load pages for better performance
 const Index = lazy(() => import("./pages/Index"));
